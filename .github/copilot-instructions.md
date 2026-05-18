@@ -66,11 +66,27 @@ Next: Notify PM (Claude) to begin UAT acceptance
 
 ### General Standards
 - Follow the project's existing coding style (e.g., .eslintrc, .prettierrc configurations)
-- Each commit corresponds to one Subtask. Commit message format:
+- Each commit corresponds to one Subtask.
+- Commit messages must follow Conventional Commits 1.0.0: https://www.conventionalcommits.org/en/v1.0.0/
+- Commit message format:
   ```
-  feat(task-id): brief description of completed work
+  <type>[optional scope]: <description>
+
+  [optional body]
+  [optional footer(s)]
   ```
+- Use `feat` for new features, `fix` for bug fixes, and appropriate supporting types such as `docs`, `test`, `refactor`, `style`, `chore`, `build`, `ci`, or `perf`.
+- Use a scope when it clarifies the affected area, e.g. `feat(auth): add sign-in form`.
+- Mark breaking changes with `!` in the type/scope prefix or a `BREAKING CHANGE:` footer.
 - Do not introduce new dependencies without discussion
+
+### Branch Workflow
+- The repository must maintain these branches: `main`, `staging`, and `dev`.
+- `main` is the stable production branch.
+- `staging` is for release candidate validation before merging to `main`.
+- `dev` is the default integration branch for active development.
+- Feature work should branch from `dev` and merge back into `dev`.
+- Promote changes in order: `dev` → `staging` → `main`.
 
 ### When DESIGN_SPEC Exists (Phase 3)
 - **All classNames must follow DESIGN_SPEC definitions**
