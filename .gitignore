@@ -1,3 +1,10 @@
+# env files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
 /PRD.md
 /DEVELOPMENT_SCHEDULE.md
 /IMPLEMENTATION_PLAN.md
