@@ -25,14 +25,15 @@ Jira: TODO → In Progress
       │       Jira: In Progress → Ready for Review
       │       PR link posted as Jira comment
       │
+      ├─▶ GitHub Automatic Copilot code review (built-in)
+      │       Posts structured review comment on the PR automatically
+      │
       │   Jira Automation rule fires on Ready for Review
       │       │
-      │       ▼ [3] pr-code-review       (slow, ~60s)
-      │           Codex (o4-mini) reviews diff against project standards
-      │           Structured review comment posted on PR
+      │       ▼ [3] pr-code-review       (Jira transition only)
       │           Jira: Ready for Review → Testing
       │
-      ▼ PR review submitted (any state)
+      ▼ PR review submitted (Copilot or human)
       │
       └─▶ [4] pr-fix-unresolved
               GraphQL: fetch unresolved, non-outdated review threads
@@ -86,23 +87,15 @@ What it does:
 
 ---
 
-### [3] Jira Ready for Review → Code Review + Testing
+### [3] Jira Ready for Review → Testing
 
 **File:** `.github/workflows/pr-code-review.yml`  
-**Trigger:** `repository_dispatch` event `jira-ticket-ready-for-review` (sent by Jira Automation when a ticket moves to Ready for Review)  
-**Script:** `scripts/code_review_agent.py`
+**Trigger:** `repository_dispatch` event `jira-ticket-ready-for-review` (sent by Jira Automation when a ticket moves to Ready for Review)
+
+> Code review is handled by **GitHub Automatic Copilot code review** (repo Settings → Copilot → Automatic code review). It fires on PR open and posts a structured review comment automatically — no custom script needed.
 
 What it does:
-1. Fetches the Jira ticket to extract the task ID
-2. Finds the matching open PR on GitHub by searching `feature/T{N}.{M}.{P}*` branches
-3. Calls OpenAI Codex (`o4-mini`) with `copilot-instructions.md` as the review rubric
-4. Posts a structured review comment on the PR:
-   - **Summary** — overall quality signal (ship / ship with fixes / needs rework)
-   - **Critical** — must-fix before merge (bugs, security, broken contracts)
-   - **Warnings** — should fix (missing error handling, unchecked responses, no tests)
-   - **Suggestions** — optional improvements
-   - **Checklist** — pass/fail for secrets, validation, transactions, tests, types
-5. Transitions Jira ticket: Ready for Review → Testing
+1. Transitions Jira ticket: Ready for Review → Testing
 
 **Jira Automation rule to create:**
 - Trigger: Issue transitioned → In Progress → Ready for Review
@@ -152,7 +145,6 @@ What it does:
 | `JIRA_EMAIL` | Atlassian account email |
 | `JIRA_API_TOKEN` | Atlassian API token — generate at `id.atlassian.com → Security → API tokens` |
 | `ANTHROPIC_API_KEY` | Claude API key (used by Automation 1 — PM agent) |
-| `OPENAI_API_KEY` | OpenAI API key (used by Automation 3 — Codex code review) |
 | `GITHUB_TOKEN` | Auto-provided by GitHub Actions — no setup needed |
 
 ---
