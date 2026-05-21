@@ -70,7 +70,7 @@ jobs:
 
           # Look up Jira key from GitHub issue body (avoids Jira JQL search)
           # Automation 1 creates an issue with body containing "**Jira:** FREDDY-NN"
-          issues = gh_get(f"/repos/{REPO}/issues?labels=copilot&state=open&per_page=50")
+          issues = gh_get(f"/repos/{REPO}/issues?labels=aider&state=open&per_page=50")
           issue_key = None
           for issue in issues:
               title = issue.get("title", "")

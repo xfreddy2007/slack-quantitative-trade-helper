@@ -1,19 +1,24 @@
-name: Jira Ticket → Copilot
+name: Jira Ticket → aider Implementation
 
 on:
   repository_dispatch:
     types: [jira-ticket-started]
 
 permissions:
+  contents: write
   issues: write
-  contents: read
+  pull-requests: write
 
 jobs:
-  pm-to-copilot:
+  implement:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v4
         with:
@@ -30,46 +35,81 @@ jobs:
             --issue-key "${{ github.event.client_payload.issue_key }}" \
             --output /tmp/issue.json
 
-      - name: Ensure copilot label exists
+      - name: Create tracking issue
+        id: issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh label create "copilot" \
-            --color "0075ca" \
-            --description "Assigned to Copilot coding agent" \
+          gh label create "aider" --color "7c3aed" \
+            --description "Implemented by aider + Claude Sonnet" \
             --repo "${{ github.repository }}" 2>/dev/null || true
 
-      - name: Create issue and assign Copilot
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
           TITLE=$(jq -r '.title' /tmp/issue.json)
           BODY=$(jq -r '.body' /tmp/issue.json)
 
           ISSUE_URL=$(gh issue create \
             --title "$TITLE" \
             --body "$BODY" \
-            --label "copilot" \
+            --label "aider" \
             --repo "${{ github.repository }}")
 
           ISSUE_NUMBER=$(basename "$ISSUE_URL")
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
           echo "Created issue #$ISSUE_NUMBER: $ISSUE_URL"
 
-          # Assign Copilot coding agent via REST API
-          ASSIGN_RESP=$(curl -L \
-            -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/assignees" \
-            -d '{"assignees":["copilot"]}' \
-            -w "\nHTTP_STATUS:%{http_code}")
-          HTTP_STATUS=$(echo "$ASSIGN_RESP" | grep "HTTP_STATUS:" | cut -d: -f2)
-          echo "Assign response (HTTP $HTTP_STATUS):"
-          echo "$ASSIGN_RESP" | grep -v "HTTP_STATUS:"
-          if [ "$HTTP_STATUS" != "201" ]; then
-            echo "WARNING: @copilot assignment may have failed (HTTP $HTTP_STATUS)."
-            echo "Ensure GitHub Copilot Coding Agent is enabled: repo Settings → Copilot → Coding agent."
-          else
-            echo "Assigned @copilot to issue #$ISSUE_NUMBER"
-          fi
+      - name: Create feature branch
+        id: branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE=$(jq -r '.title' /tmp/issue.json)
+
+          TASK_ID=$(echo "$TITLE" | grep -oE 'T[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          SLUG=$(echo "$TITLE" | sed 's/\[.*\] //' | tr '[:upper:]' '[:lower:]' \
+                | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//g' | cut -c1-40)
+          BRANCH="feature/${TASK_ID}-${SLUG}"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Branch: $BRANCH"
+
+          git config user.name "aider[bot]"
+          git config user.email "aider@github-actions"
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b "$BRANCH"
+
+      - name: Run aider
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          TASK_SPEC=$(jq -r '.body' /tmp/issue.json)
+          uvx --from aider-chat aider \
+            --model claude-sonnet-4-6 \
+            --message "$TASK_SPEC" \
+            --yes \
+            --auto-commits \
+            --no-check-update
+
+      - name: Push branch and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          TITLE="${{ steps.issue.outputs.title }}"
+          ISSUE_NUMBER="${{ steps.issue.outputs.issue_number }}"
+
+          git push origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --title "$TITLE" \
+            --body "Closes #${ISSUE_NUMBER}
+
+Implemented by aider + Claude Sonnet 4.6 from Jira ticket ${ISSUE_KEY}." \
+            --base dev \
+            --head "$BRANCH" \
+            --label "aider" \
+            --repo "${{ github.repository }}")
+
+          echo "PR opened: $PR_URL"
