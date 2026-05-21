@@ -1,4 +1,4 @@
-name: Jira Ready for Review → Code Review + In Review
+name: Jira Ready for Review → Code Review + Testing
 
 on:
   repository_dispatch:
@@ -99,14 +99,14 @@ jobs:
       - name: Run code review agent
         if: steps.find-pr.outputs.pr_number != ''
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          uv run --with anthropic scripts/code_review_agent.py \
+          uv run --with openai scripts/code_review_agent.py \
             --repo "${{ github.repository }}" \
             --pr "${{ steps.find-pr.outputs.pr_number }}"
 
-      - name: Transition Jira ticket to In Review
+      - name: Transition Jira ticket to Testing
         if: steps.find-pr.outputs.pr_number != ''
         env:
           JIRA_URL: ${{ secrets.JIRA_URL }}
@@ -140,7 +140,7 @@ jobs:
           transitions = tr_data.get("transitions", [])
           print("Available transitions:", [t["name"] for t in transitions])
 
-          priority = ["in review", "code review", "under review", "reviewing"]
+          priority = ["testing", "qa", "test", "quality assurance"]
           chosen = None
           for target in priority:
               for t in transitions:
@@ -151,7 +151,7 @@ jobs:
                   break
 
           if not chosen:
-              print("No 'In Review' transition found — skipping.")
+              print("No 'Testing' transition found — skipping.")
               sys.exit(0)
 
           print(f"Transitioning {ISSUE_KEY} → '{chosen['name']}' (id={chosen['id']})")

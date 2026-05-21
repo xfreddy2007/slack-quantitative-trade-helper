@@ -2,16 +2,16 @@
 """
 Code Review Agent — fetches a PR diff and posts a structured review as a PR comment.
 
-Uses Claude with this project's stack standards (copilot-instructions.md) as the
+Uses OpenAI Codex with this project's stack standards (copilot-instructions.md) as the
 review rubric. Covers: correctness, security, TypeScript/Python conventions,
 test coverage, Zod/Pydantic validation, and error handling.
 
 Usage:
-  uv run --with anthropic scripts/code_review_agent.py \
+  uv run --with openai scripts/code_review_agent.py \
     --repo OWNER/REPO --pr NUMBER --output /tmp/review.md
 
 Required environment variables:
-  ANTHROPIC_API_KEY
+  OPENAI_API_KEY
   GH_TOKEN (GitHub token with repo read access)
 """
 
@@ -22,7 +22,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 GH_TOKEN = os.environ["GH_TOKEN"]
 
 ROOT = Path(__file__).parent.parent
@@ -97,16 +97,18 @@ def fetch_pr_diff(repo: str, pr: int) -> str:
     return gh_api(f"/repos/{repo}/pulls/{pr}", accept="application/vnd.github.v3.diff")
 
 
-def call_claude(system: str, user: str) -> str:
-    import anthropic
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    msg = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4096,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+def call_codex(system: str, user: str) -> str:
+    import openai
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    resp = client.chat.completions.create(
+        model="o4-mini",
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_completion_tokens=4096,
     )
-    return msg.content[0].text
+    return resp.choices[0].message.content
 
 
 def post_pr_comment(repo: str, pr: int, body: str) -> None:
@@ -167,10 +169,10 @@ Description: {body[:500] if body else "(none)"}
 {diff_truncated}
 """
 
-    print("Calling Claude for code review …")
-    review = call_claude(system, user)
+    print("Calling Codex (o4-mini) for code review …")
+    review = call_codex(system, user)
 
-    header = f"## Code Review — PR #{args.pr}\n\n> Automated review by [Picky-PM code reviewer](https://github.com/{args.repo}/actions)\n\n"
+    header = f"## Code Review — PR #{args.pr}\n\n> Automated review by [Codex code reviewer](https://github.com/{args.repo}/actions)\n\n"
     full_review = header + review
 
     print("Posting review comment …")
