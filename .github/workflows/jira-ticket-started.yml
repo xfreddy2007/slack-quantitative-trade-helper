@@ -83,10 +83,14 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          TASK_SPEC=$(jq -r '.body' /tmp/issue.json)
+          printf '%s\n\n---\n\n%s' \
+            "Implement this task completely. Do NOT ask for clarification or additional files. Create ALL required files from scratch. Begin immediately." \
+            "$(jq -r '.body' /tmp/issue.json)" \
+            > /tmp/aider_prompt.txt
+
           uvx --from aider-chat aider \
             --model claude-sonnet-4-6 \
-            --message "$TASK_SPEC" \
+            --message "$(cat /tmp/aider_prompt.txt)" \
             --yes \
             --auto-commits \
             --no-check-update
@@ -99,6 +103,12 @@ jobs:
           BRANCH="${{ steps.branch.outputs.branch }}"
           TITLE="${{ steps.issue.outputs.title }}"
           ISSUE_NUMBER="${{ steps.issue.outputs.issue_number }}"
+
+          # If aider made no commits (e.g. asked clarifying questions), add a placeholder
+          if git diff --quiet HEAD origin/dev 2>/dev/null || [ "$(git log --oneline origin/dev..HEAD | wc -l)" -eq 0 ]; then
+            echo "No commits from aider — creating placeholder commit"
+            git commit --allow-empty -m "chore: aider scaffold placeholder for $BRANCH"
+          fi
 
           git push origin "$BRANCH"
 
