@@ -68,7 +68,7 @@ jobs:
           task_id = match.group(1)
           print(f"Task ID: {task_id}")
 
-          gh_issues = gh_get(f"/repos/{REPO}/issues?labels=copilot&state=all&per_page=50")
+          gh_issues = gh_get(f"/repos/{REPO}/issues?labels=aider&state=all&per_page=50")
           issue_key = None
           for iss in gh_issues:
               if f"[{task_id}]" in (iss.get("title") or ""):

@@ -16,8 +16,8 @@ All feature work flows through a fully automated pipeline driven by Jira and Git
 Jira: TODO → In Progress
       │
       ▼ [1] jira-ticket-started
-      Claude (PM) reads ticket → GitHub issue with implement-feature workflow
-      @copilot assigned → codes on feature/T{N}.{M}.{P}-slug → opens PR → dev
+      Claude (PM) reads ticket → GitHub issue spec (label: aider)
+      aider + Claude Sonnet 4.6 implements code → commits → opens PR on feature/T{N}.{M}.{P}-slug → dev
       │
       ▼ PR opened on feature/* → dev
       │
@@ -37,7 +37,7 @@ Jira: TODO → In Progress
       │
       └─▶ [4] pr-fix-unresolved
               GraphQL: fetch unresolved, non-outdated review threads
-              If threads > 0 → upsert copilot-fix issue → @copilot fixes & pushes
+              If threads > 0 → upsert aider-fix issue → reviewer addresses manually or re-triggers aider
               If threads == 0 → auto-close fix issue ✅
               (loops on every review submission until all threads resolved)
 

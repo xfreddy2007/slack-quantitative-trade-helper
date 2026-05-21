@@ -104,7 +104,7 @@ technical notes referencing the relevant stack (TypeScript/Python/infra), branch
 convention (feature/T{{N}}.{{M}}.{{P}}-slug from dev), verification commands, and \
 the implement-feature workflow steps (classify scope, load senior skills, implement, \
 verify errors, unit tests, e2e, code review, done summary)>",
-  "labels": ["copilot"]
+  "labels": ["aider"]
 }}"""
 
 
