@@ -1,0 +1,13 @@
+
+## Definition of Done
+
+- [ ] All 3 portfolio config fixtures present and validated
+- [ ] All 4 price snapshot fixtures present and validated
+- [ ] All 5 news article fixtures present and validated
+- [ ] Both provider payload fixtures present and validated
+- [ ] Every fixture has a corresponding Vitest validation test
+- [ ] `packages/fixtures/index.ts` barrel exports all fixtures and schemas
+- [ ] All tests pass with zero failures
+- [ ] No `any` types; strict TypeScript enabled
+- [ ] All timestamps are fixed ISO strings (deterministic)
+- [ ] Zod schemas cover all fields used in tests
