@@ -1,0 +1,44 @@
+name: __jira-check
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Jira project and recent tickets
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import base64, json, os, urllib.request
+
+          auth = "Basic " + base64.b64encode(f"{os.environ['JIRA_EMAIL']}:{os.environ['JIRA_API_TOKEN']}".encode()).decode()
+          url = os.environ['JIRA_URL']
+
+          def jira(path):
+              req = urllib.request.Request(f"{url}/rest/api/3{path}",
+                  headers={"Authorization": auth, "Accept": "application/json"})
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return json.loads(r.read()), r.status
+              except urllib.error.HTTPError as e:
+                  return {"error": e.reason}, e.code
+
+          # 1. Auth check
+          d, s = jira("/myself")
+          print(f"Auth: {s} — {d.get('emailAddress', d.get('message','?'))}")
+
+          # 2. Project check
+          d, s = jira("/project/FREDDY")
+          print(f"Project FREDDY: {s} — {d.get('name', d.get('message','?'))}")
+
+          # 3. Recent Done tickets (direct issue fetch)
+          for key in ["FREDDY-14", "FREDDY-15", "FREDDY-16"]:
+              d, s = jira(f"/issue/{key}?fields=summary,status")
+              if s == 200:
+                  print(f"  {key}: {d['fields']['status']['name']} | {d['fields']['summary'][:50]}")
+              else:
+                  print(f"  {key}: HTTP {s} — {d.get('message','?')}")
+          PYEOF
