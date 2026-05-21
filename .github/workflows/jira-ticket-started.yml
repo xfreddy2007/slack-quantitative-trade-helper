@@ -102,11 +102,12 @@ jobs:
 
           git push origin "$BRANCH"
 
+          PR_BODY=$(printf 'Closes #%s\n\nImplemented by aider + Claude Sonnet 4.6 from Jira ticket %s.' \
+            "$ISSUE_NUMBER" "$ISSUE_KEY")
+
           PR_URL=$(gh pr create \
             --title "$TITLE" \
-            --body "Closes #${ISSUE_NUMBER}
-
-Implemented by aider + Claude Sonnet 4.6 from Jira ticket ${ISSUE_KEY}." \
+            --body "$PR_BODY" \
             --base dev \
             --head "$BRANCH" \
             --label "aider" \
