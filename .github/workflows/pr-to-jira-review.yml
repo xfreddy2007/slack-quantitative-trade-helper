@@ -20,9 +20,11 @@ jobs:
           JIRA_URL: ${{ secrets.JIRA_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO: ${{ github.repository }}
         run: |
           python3 - <<'EOF'
           import base64, json, os, re, sys, urllib.request, urllib.error
@@ -30,9 +32,11 @@ jobs:
           JIRA_URL   = os.environ["JIRA_URL"]
           JIRA_EMAIL = os.environ["JIRA_EMAIL"]
           JIRA_TOKEN = os.environ["JIRA_API_TOKEN"]
+          GH_TOKEN   = os.environ["GH_TOKEN"]
           BRANCH     = os.environ["BRANCH"]
           PR_TITLE   = os.environ["PR_TITLE"]
           PR_URL     = os.environ["PR_URL"]
+          REPO       = os.environ["REPO"]
 
           def auth():
               return "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_TOKEN}".encode()).decode()
@@ -48,6 +52,14 @@ jobs:
               with urllib.request.urlopen(req) as r:
                   return json.loads(r.read()) if r.length != 0 else {}
 
+          def gh_get(path):
+              req = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={"Authorization": f"Bearer {GH_TOKEN}", "Accept": "application/vnd.github+json"},
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read())
+
           # Extract task ID from branch name: feature/T1.1.1-slug → T1.1.1
           match = re.search(r'feature/(T\d+\.\d+\.\d+)', BRANCH)
           if not match:
@@ -56,16 +68,22 @@ jobs:
           task_id = match.group(1)
           print(f"Task ID: {task_id}")
 
-          # Find the Jira issue by searching summary
-          search = jira("GET", f'/search?jql=summary+%7E+%22%5B{task_id}%5D%22&maxResults=1&fields=summary,status')
-          issues = search.get("issues", [])
-          if not issues:
-              print(f"No Jira issue found matching '[{task_id}]' — skipping.")
+          # Look up Jira key from GitHub issue body (avoids Jira JQL search)
+          # Automation 1 creates an issue with body containing "**Jira:** FREDDY-NN"
+          issues = gh_get(f"/repos/{REPO}/issues?labels=copilot&state=open&per_page=50")
+          issue_key = None
+          for issue in issues:
+              title = issue.get("title", "")
+              body  = issue.get("body", "") or ""
+              if f"[{task_id}]" in title:
+                  m = re.search(r'\*\*Jira:\*\*\s*([\w]+-\d+)', body)
+                  if m:
+                      issue_key = m.group(1)
+                      break
+          if not issue_key:
+              print(f"No GitHub issue found for [{task_id}] with a Jira key — skipping.")
               sys.exit(0)
-
-          issue_key = issues[0]["key"]
-          current_status = issues[0]["fields"]["status"]["name"]
-          print(f"Found: {issue_key}  (status: {current_status})")
+          print(f"Jira key: {issue_key}")
 
           # Get available transitions
           tr_data = jira("GET", f"/issue/{issue_key}/transitions")
