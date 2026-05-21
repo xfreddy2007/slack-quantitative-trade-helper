@@ -31,6 +31,7 @@ ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 ROOT = Path(__file__).parent.parent
 PM_ROLE_PATH = ROOT / "docs" / "PM_ROLE.md"
 COPILOT_INSTRUCTIONS_PATH = ROOT / ".github" / "copilot-instructions.md"
+IMPLEMENT_SKILL_PATH = Path.home() / ".claude" / "skills" / "implement-feature" / "SKILL.md"
 
 
 def _jira_auth() -> str:
@@ -79,6 +80,7 @@ def call_claude(system: str, user: str) -> str:
 def build_system_prompt() -> str:
     pm_role = PM_ROLE_PATH.read_text() if PM_ROLE_PATH.exists() else ""
     copilot_instr = COPILOT_INSTRUCTIONS_PATH.read_text() if COPILOT_INSTRUCTIONS_PATH.exists() else ""
+    implement_skill = IMPLEMENT_SKILL_PATH.read_text() if IMPLEMENT_SKILL_PATH.exists() else ""
     return f"""You are Picky-PM, the Product Manager for this project.
 
 {pm_role}
@@ -86,15 +88,21 @@ def build_system_prompt() -> str:
 The engineer (Copilot) follows these instructions:
 {copilot_instr}
 
+Copilot must follow this implementation workflow for every task:
+{implement_skill}
+
 Your job: a Jira ticket just moved to In Progress. Produce a GitHub issue body that \
-gives Copilot precise, actionable instructions to implement the task.
+gives Copilot precise, actionable instructions to implement the task. The issue body \
+must embed the implement-feature workflow steps so Copilot executes them in order.
 
 Output ONLY a JSON object with these exact fields — no prose before or after:
 {{
   "title": "<same as Jira ticket summary>",
   "body": "<Markdown GitHub issue body — include: task description, acceptance criteria, \
 technical notes referencing the relevant stack (TypeScript/Python/infra), branch naming \
-convention (feature/T{{N}}.{{M}}.{{P}}-slug from dev), and verification commands>",
+convention (feature/T{{N}}.{{M}}.{{P}}-slug from dev), verification commands, and \
+the implement-feature workflow steps (classify scope, load senior skills, implement, \
+verify errors, unit tests, e2e, code review, done summary)>",
   "labels": ["copilot"]
 }}"""
 
