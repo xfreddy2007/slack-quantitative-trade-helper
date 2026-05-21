@@ -1,0 +1,137 @@
+name: aider Clarification Answered → Continue Implementation
+
+on:
+  repository_dispatch:
+    types: [aider-clarification-answered]
+
+# Triggered by Jira Automation when user adds a comment answering aider's question.
+# Payload: {"issue_key": "FREDDY-16", "answer": "<comment body>"}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  continue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Find feature branch for this issue
+        id: find-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, re, urllib.request
+
+          GH_TOKEN  = os.environ["GH_TOKEN"]
+          ISSUE_KEY = os.environ["ISSUE_KEY"]
+          REPO      = os.environ["GITHUB_REPOSITORY"]
+
+          def gh(path):
+              req = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={"Authorization": f"Bearer {GH_TOKEN}", "Accept": "application/vnd.github+json"},
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read())
+
+          # Find open branch with state file for this issue key
+          branches = gh(f"/repos/{REPO}/git/refs/heads")
+          branch = ""
+          for b in branches:
+              ref = b["ref"].replace("refs/heads/", "")
+              if ref.startswith("feature/"):
+                  # Check if .aider_state.json exists on this branch
+                  try:
+                      content = gh(f"/repos/{REPO}/contents/.aider_state.json?ref={ref}")
+                      import base64
+                      state = json.loads(base64.b64decode(content["content"]).decode())
+                      if state.get("issue_key") == ISSUE_KEY:
+                          branch = ref
+                          break
+                  except Exception:
+                      pass
+
+          if not branch:
+              print(f"No feature branch found with aider state for {ISSUE_KEY}")
+              exit(1)
+
+          print(f"Found branch: {branch}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"branch={branch}\n")
+          PYEOF
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.find-branch.outputs.branch }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Configure git
+        run: |
+          git config user.name "aider[bot]"
+          git config user.email "aider@github-actions"
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+      - name: Continue aider with user answer
+        id: aider
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          uv run --with aider-chat scripts/aider_agent.py continue \
+            --issue-key "${{ github.event.client_payload.issue_key }}" \
+            --answer "${{ github.event.client_payload.answer }}"
+        continue-on-error: true
+
+      - name: Push branch — still waiting for clarification
+        if: steps.aider.outcome == 'failure'
+        run: |
+          git push origin "${{ steps.find-branch.outputs.branch }}"
+          echo "Another question posted to Jira. Waiting for user response."
+
+      - name: Push branch and open PR
+        if: steps.aider.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+        run: |
+          BRANCH="${{ steps.find-branch.outputs.branch }}"
+          git push origin "$BRANCH"
+
+          # Find the tracking GitHub issue
+          ISSUES=$(gh api "/repos/${{ github.repository }}/issues?labels=aider&state=open&per_page=50")
+          TASK_ID=$(echo "$BRANCH" | grep -oE 'T[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          ISSUE_NUMBER=$(echo "$ISSUES" | python3 -c "
+          import json,sys,re
+          issues=json.load(sys.stdin)
+          task_id='${TASK_ID}'
+          for i in issues:
+              if f'[{task_id}]' in (i.get('title') or ''):
+                  print(i['number'])
+                  break
+          ")
+
+          TITLE=$(gh api "/repos/${{ github.repository }}/issues/${ISSUE_NUMBER}" --jq '.title')
+          PR_BODY=$(printf 'Closes #%s\n\nImplemented by aider + Claude Sonnet 4.6 from Jira ticket %s.' \
+            "$ISSUE_NUMBER" "$ISSUE_KEY")
+
+          PR_URL=$(gh pr create \
+            --title "$TITLE" \
+            --body "$PR_BODY" \
+            --base dev \
+            --head "$BRANCH" \
+            --label "aider" \
+            --repo "${{ github.repository }}")
+
+          echo "PR opened: $PR_URL"
