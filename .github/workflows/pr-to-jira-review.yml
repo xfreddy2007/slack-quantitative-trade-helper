@@ -76,7 +76,7 @@ jobs:
               title = issue.get("title", "")
               body  = issue.get("body", "") or ""
               if f"[{task_id}]" in title:
-                  m = re.search(r'\*\*Jira:\*\*\s*([\w]+-\d+)', body)
+                  m = re.search(r'\*\*Jira[^:]*:\*\*\s*([\w]+-\d+)', body)
                   if m:
                       issue_key = m.group(1)
                       break

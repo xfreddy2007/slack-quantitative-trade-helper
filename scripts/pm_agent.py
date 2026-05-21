@@ -98,7 +98,8 @@ must embed the implement-feature workflow steps so Copilot executes them in orde
 Output ONLY a JSON object with these exact fields — no prose before or after:
 {{
   "title": "<same as Jira ticket summary>",
-  "body": "<Markdown GitHub issue body — include: task description, acceptance criteria, \
+  "body": "<Markdown GitHub issue body — the FIRST line of the body MUST be exactly: '**Jira:** ISSUE_KEY' \
+(e.g. '**Jira:** FREDDY-15'). Then include: task description, acceptance criteria, \
 technical notes referencing the relevant stack (TypeScript/Python/infra), branch naming \
 convention (feature/T{{N}}.{{M}}.{{P}}-slug from dev), verification commands, and \
 the implement-feature workflow steps (classify scope, load senior skills, implement, \

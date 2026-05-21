@@ -72,7 +72,7 @@ jobs:
           issue_key = None
           for iss in gh_issues:
               if f"[{task_id}]" in (iss.get("title") or ""):
-                  m = re.search(r'\*\*Jira:\*\*\s*([\w]+-\d+)', iss.get("body") or "")
+                  m = re.search(r'\*\*Jira[^:]*:\*\*\s*([\w]+-\d+)', iss.get("body") or "")
                   if m:
                       issue_key = m.group(1)
                       break
