@@ -1,0 +1,160 @@
+name: Jira Ready for Review → Code Review + Testing
+
+on:
+  repository_dispatch:
+    types: [jira-ticket-ready-for-review]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Find open PR for this Jira ticket
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+        run: |
+          python3 - <<'EOF'
+          import base64, json, os, re, sys, urllib.request
+
+          JIRA_URL   = os.environ["JIRA_URL"]
+          JIRA_EMAIL = os.environ["JIRA_EMAIL"]
+          JIRA_TOKEN = os.environ["JIRA_API_TOKEN"]
+          GH_TOKEN   = os.environ["GH_TOKEN"]
+          ISSUE_KEY  = os.environ["ISSUE_KEY"]
+          REPO       = os.environ.get("GITHUB_REPOSITORY", "")
+
+          def jira_auth():
+              return "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_TOKEN}".encode()).decode()
+
+          def gh_auth():
+              return f"Bearer {GH_TOKEN}"
+
+          # Fetch Jira issue summary to extract task ID (e.g. "[T1.1.1]")
+          req = urllib.request.Request(
+              f"{JIRA_URL}/rest/api/3/issue/{ISSUE_KEY}?fields=summary",
+              headers={"Authorization": jira_auth(), "Accept": "application/json"},
+          )
+          with urllib.request.urlopen(req) as r:
+              issue = json.loads(r.read())
+          summary = issue["fields"]["summary"]
+          print(f"Jira summary: {summary}")
+
+          match = re.search(r'\[(T\d+\.\d+\.\d+)\]', summary)
+          if not match:
+              print(f"No task ID found in summary '{summary}' — cannot locate PR.")
+              # Write empty output so downstream steps skip gracefully
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("pr_number=\n")
+                  f.write("branch=\n")
+              sys.exit(0)
+          task_id = match.group(1)
+          print(f"Task ID: {task_id}")
+
+          # Search open PRs targeting dev with branch matching feature/T{task_id}*
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{REPO}/pulls?state=open&base=dev&per_page=50",
+              headers={
+                  "Authorization": gh_auth(),
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          with urllib.request.urlopen(req) as r:
+              prs = json.loads(r.read())
+
+          pr_number = ""
+          branch = ""
+          for pr in prs:
+              head_ref = pr["head"]["ref"]
+              if re.search(rf'feature/{re.escape(task_id)}', head_ref):
+                  pr_number = str(pr["number"])
+                  branch = head_ref
+                  print(f"Found PR #{pr_number}: {head_ref}")
+                  break
+
+          if not pr_number:
+              print(f"No open PR found for branch feature/{task_id}* — skipping.")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"pr_number={pr_number}\n")
+              f.write(f"branch={branch}\n")
+          EOF
+
+      - name: Run code review agent
+        if: steps.find-pr.outputs.pr_number != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          uv run --with openai scripts/code_review_agent.py \
+            --repo "${{ github.repository }}" \
+            --pr "${{ steps.find-pr.outputs.pr_number }}"
+
+      - name: Transition Jira ticket to Testing
+        if: steps.find-pr.outputs.pr_number != ''
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+        run: |
+          python3 - <<'EOF'
+          import base64, json, os, sys, urllib.request
+
+          JIRA_URL   = os.environ["JIRA_URL"]
+          JIRA_EMAIL = os.environ["JIRA_EMAIL"]
+          JIRA_TOKEN = os.environ["JIRA_API_TOKEN"]
+          ISSUE_KEY  = os.environ["ISSUE_KEY"]
+
+          def auth():
+              return "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_TOKEN}".encode()).decode()
+
+          def jira(method, path, body=None):
+              url = f"{JIRA_URL}/rest/api/3{path}"
+              data = json.dumps(body).encode() if body else None
+              req = urllib.request.Request(
+                  url, data=data,
+                  headers={"Authorization": auth(), "Content-Type": "application/json", "Accept": "application/json"},
+                  method=method,
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read()) if r.length != 0 else {}
+
+          tr_data = jira("GET", f"/issue/{ISSUE_KEY}/transitions")
+          transitions = tr_data.get("transitions", [])
+          print("Available transitions:", [t["name"] for t in transitions])
+
+          priority = ["testing", "qa", "test", "quality assurance"]
+          chosen = None
+          for target in priority:
+              for t in transitions:
+                  if target in t["name"].lower():
+                      chosen = t
+                      break
+              if chosen:
+                  break
+
+          if not chosen:
+              print("No 'Testing' transition found — skipping.")
+              sys.exit(0)
+
+          print(f"Transitioning {ISSUE_KEY} → '{chosen['name']}' (id={chosen['id']})")
+          jira("POST", f"/issue/{ISSUE_KEY}/transitions", {"transition": {"id": chosen["id"]}})
+          print("Done.")
+          EOF

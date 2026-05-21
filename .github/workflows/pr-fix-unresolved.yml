@@ -1,0 +1,29 @@
+name: PR Review → Fix Unresolved Threads via Copilot
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  fix-unresolved:
+    # Only run on feature branches targeting dev
+    if: |
+      startsWith(github.event.pull_request.head.ref, 'feature/') &&
+      github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check unresolved threads and assign Copilot if needed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/fix_unresolved_agent.py \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}"

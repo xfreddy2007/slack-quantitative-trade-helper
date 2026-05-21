@@ -1,3 +1,13 @@
-PRD.md
-DEVELOPMENT_SCHEDULE.md
-IMPLEMENTATION_PLAN.md
+# env files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Ignore documentation files
+/PRD.md
+/DEVELOPMENT_SCHEDULE.md
+/IMPLEMENTATION_PLAN.md
+/docs/PROJECT_BREAKDOWN.md
+/docs/tasks/
