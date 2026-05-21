@@ -71,15 +71,12 @@ jobs:
           # Look up Jira key from GitHub issue body (avoids Jira JQL search)
           # Automation 1 creates an issue with body containing "**Jira:** FREDDY-NN"
           issues = gh_get(f"/repos/{REPO}/issues?labels=copilot&state=open&per_page=50")
-          print(f"Found {len(issues)} open copilot issue(s)")
           issue_key = None
           for issue in issues:
               title = issue.get("title", "")
               body  = issue.get("body", "") or ""
-              print(f"  Checking: '{title}' | body snippet: {repr(body[:80])}")
               if f"[{task_id}]" in title:
                   m = re.search(r'\*\*Jira[^:]*:\*\*\s*([\w]+-\d+)', body)
-                  print(f"  Title match! Regex result: {m.group(1) if m else 'NO MATCH'}")
                   if m:
                       issue_key = m.group(1)
                       break
