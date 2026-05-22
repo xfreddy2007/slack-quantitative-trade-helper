@@ -94,8 +94,12 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           GH_ISSUE_URL="https://github.com/${REPO}/issues/${ISSUE_NUMBER}"
-          curl -sf -X POST "${JIRA_WEBHOOK_BRANCH_READY}" \
+          PAYLOAD="{\"issues\":[\"${ISSUE_KEY}\"],\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
+          HTTP_CODE=$(curl -s -o /tmp/jira_response.txt -w "%{http_code}" \
+            -X POST "${JIRA_WEBHOOK_BRANCH_READY}?token=${JIRA_WEBHOOK_BRANCH_READY_TOKEN}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${JIRA_WEBHOOK_BRANCH_READY_TOKEN}" \
-            -d "{\"issues\":[\"${ISSUE_KEY}\"],\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
+            -d "$PAYLOAD")
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response: $(cat /tmp/jira_response.txt)"
+          [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ] || exit 1
           echo "Done. Branch ${BRANCH} ready. Jira automation comment queued."
