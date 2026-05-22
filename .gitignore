@@ -1,9 +1,27 @@
-# env files
+# Secrets & personal data
 .env
 .env.local
 .env.development
 .env.test
 .env.production
+*.env.local
+personal-portfolio/
+user-wiki-output/
+alert-logs/
+
+# Node
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.pytest_cache/
 
 # Ignore documentation files
 /PRD.md
@@ -14,3 +32,10 @@
 
 # aider working files (state file is force-added only when needed by automation)
 .aider*
+
+# Prisma
+prisma/migrations/
+
+# OS
+.DS_Store
+Thumbs.db
