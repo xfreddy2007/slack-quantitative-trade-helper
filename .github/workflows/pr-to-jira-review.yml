@@ -76,7 +76,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python3 - <<'EOF'
-          import base64, json, os, re, sys, urllib.request, urllib.error
+          import base64, json, os, re, sys, urllib.parse, urllib.request, urllib.error
 
           JIRA_URL   = os.environ["JIRA_URL"]
           JIRA_EMAIL = os.environ["JIRA_EMAIL"]
@@ -127,8 +127,22 @@ jobs:
                       issue_key = m.group(1)
                       break
           if not issue_key:
-              print(f"No GitHub issue found for [{task_id}] with a Jira key — skipping.")
-              sys.exit(0)
+              # Fallback: Claude Code local flow has no aider GitHub issue —
+              # search Jira directly by summary.
+              print(f"No GitHub issue found for [{task_id}] with a Jira key — trying Jira search...")
+              jql = urllib.parse.quote(f'summary ~ "{task_id}" ORDER BY updated DESC')
+              try:
+                  search_data = jira("GET", f"/issue/search?jql={jql}&maxResults=5&fields=summary,status")
+                  found = search_data.get("issues", [])
+                  if found:
+                      issue_key = found[0]["key"]
+                      print(f"Found via Jira search: {issue_key} — {found[0]['fields']['summary']}")
+                  else:
+                      print(f"No Jira ticket found for [{task_id}] — skipping.")
+                      sys.exit(0)
+              except Exception as e:
+                  print(f"Jira search failed: {e} — skipping.")
+                  sys.exit(0)
           print(f"Jira key: {issue_key}")
 
           tr_data = jira("GET", f"/issue/{issue_key}/transitions")

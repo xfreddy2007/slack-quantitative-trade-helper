@@ -72,6 +72,7 @@ jobs:
 
       - name: Open PR
         if: steps.check.outputs.existing == ''
+        id: open
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
@@ -92,4 +93,19 @@ jobs:
             --head "$BRANCH" \
             --repo "${{ github.repository }}")
 
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "PR opened: $PR_URL"
+
+      - name: Request Copilot code review
+        # Only for newly opened PRs — re-reviews on existing PRs are
+        # requested by pr-fix-unresolved.yml after aider pushes fixes.
+        if: steps.open.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            "/repos/${{ github.repository }}/pulls/${{ steps.open.outputs.pr_number }}/copilot-review-requests" \
+            2>&1 || echo "Copilot review request failed (non-fatal)"
+          echo "Copilot review requested for PR #${{ steps.open.outputs.pr_number }}"

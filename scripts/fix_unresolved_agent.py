@@ -25,6 +25,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
       headRefName
       reviewThreads(first: 100) {
         nodes {
+          id
           isResolved
           isOutdated
           comments(first: 3) {
@@ -88,6 +89,8 @@ def main():
         f.write("\n".join(lines))
     with open("/tmp/fix_branch.txt", "w") as f:
         f.write(branch)
+    with open("/tmp/thread_ids.txt", "w") as f:
+        f.write("\n".join(t["id"] for t in unresolved))
 
     sys.exit(1)  # signals caller: threads found, run aider
 

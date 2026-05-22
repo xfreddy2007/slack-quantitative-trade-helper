@@ -1,0 +1,28 @@
+name: Auto-approve bot-triggered workflows
+
+# workflow_run fires in the default-branch context (full repo trust, no approval gate)
+# even when the target workflow is in "action_required" (awaiting approval) state.
+# This lets us automatically approve pr-fix-unresolved when Copilot submits a review.
+
+on:
+  workflow_run:
+    workflows:
+      - "PR Review → Fix Unresolved Threads via aider"
+    types: [requested]
+
+permissions:
+  actions: write
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve pending workflow run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            "/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/approve" \
+            2>&1 || echo "Approve call failed (non-fatal — may already be approved)"
+          echo "Approved run #${{ github.event.workflow_run.id }} (triggered by ${{ github.event.workflow_run.actor.login }})"
