@@ -74,3 +74,14 @@ jobs:
 
           git push origin "$BRANCH"
           echo "Fixes pushed to $BRANCH"
+
+      - name: Request Copilot re-review
+        if: steps.ctx.outputs.pr != '' && steps.threads.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            "/repos/${{ github.repository }}/pulls/${{ steps.ctx.outputs.pr }}/copilot-review-requests" \
+            2>&1 || echo "Copilot re-review request failed (non-fatal)"
+          echo "Copilot re-review requested for PR #${{ steps.ctx.outputs.pr }}"
