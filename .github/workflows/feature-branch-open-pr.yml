@@ -72,6 +72,7 @@ jobs:
 
       - name: Open PR
         if: steps.check.outputs.existing == ''
+        id: open
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
@@ -92,4 +93,29 @@ jobs:
             --head "$BRANCH" \
             --repo "${{ github.repository }}")
 
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "PR opened: $PR_URL"
+
+      - name: Resolve PR number (existing PR)
+        if: steps.check.outputs.existing != ''
+        id: existing
+        run: |
+          echo "pr_number=${{ steps.check.outputs.existing }}" >> "$GITHUB_OUTPUT"
+
+      - name: Request Copilot code review
+        # PRs opened via GITHUB_TOKEN don't trigger pull_request events,
+        # so Copilot auto-review never fires. Request it explicitly here.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.open.outputs.pr_number || steps.existing.outputs.pr_number }}"
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR number — skipping Copilot review request."
+            exit 0
+          fi
+          gh api \
+            --method POST \
+            "/repos/${{ github.repository }}/pulls/${PR_NUMBER}/copilot-review-requests" \
+            2>&1 || echo "Copilot review request failed (non-fatal)"
+          echo "Copilot review requested for PR #${PR_NUMBER}"
