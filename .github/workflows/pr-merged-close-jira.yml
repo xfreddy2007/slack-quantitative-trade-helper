@@ -20,6 +20,7 @@ jobs:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_WEBHOOK_PR_MERGED: ${{ secrets.JIRA_WEBHOOK_PR_MERGED }}
+          JIRA_WEBHOOK_PR_MERGED_TOKEN: ${{ secrets.JIRA_WEBHOOK_PR_MERGED_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -97,11 +98,12 @@ jobs:
           jira("POST", f"/issue/{issue_key}/transitions", {"transition": {"id": chosen["id"]}})
 
           WEBHOOK_URL = os.environ["JIRA_WEBHOOK_PR_MERGED"]
+          WEBHOOK_TOKEN = os.environ["JIRA_WEBHOOK_PR_MERGED_TOKEN"]
           webhook_payload = json.dumps({"issues": [issue_key], "prUrl": PR_URL, "prTitle": PR_TITLE, "mergedBy": MERGED_BY}).encode()
           req = urllib.request.Request(
               WEBHOOK_URL,
               data=webhook_payload,
-              headers={"Content-Type": "application/json"},
+              headers={"Content-Type": "application/json", "Authorization": f"Bearer {WEBHOOK_TOKEN}"},
               method="POST",
           )
           with urllib.request.urlopen(req):
