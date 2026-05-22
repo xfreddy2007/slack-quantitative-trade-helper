@@ -95,6 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JIRA_WEBHOOK_BRANCH_READY: ${{ secrets.JIRA_WEBHOOK_BRANCH_READY }}
+          JIRA_WEBHOOK_BRANCH_READY_TOKEN: ${{ secrets.JIRA_WEBHOOK_BRANCH_READY_TOKEN }}
           BRANCH: ${{ steps.branch.outputs.branch }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.issue_number }}
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
@@ -105,6 +106,7 @@ jobs:
           GH_ISSUE_URL="https://github.com/${REPO}/issues/${ISSUE_NUMBER}"
           curl -sf -X POST "${JIRA_WEBHOOK_BRANCH_READY}" \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${JIRA_WEBHOOK_BRANCH_READY_TOKEN}" \
             -d "{\"issues\":[\"${ISSUE_KEY}\"],\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
           echo "Jira automation comment queued. Branch ${BRANCH} ready for local Claude Code session."
 
