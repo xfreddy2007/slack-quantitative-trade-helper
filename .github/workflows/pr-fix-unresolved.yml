@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   fix-unresolved:
@@ -74,6 +74,50 @@ jobs:
 
           git push origin "$BRANCH"
           echo "Fixes pushed to $BRANCH"
+
+      - name: Resolve review threads
+        if: steps.ctx.outputs.pr != '' && steps.threads.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, urllib.request
+
+          GH_TOKEN = os.environ["GH_TOKEN"]
+
+          RESOLVE_MUTATION = """
+          mutation($threadId: ID!) {
+            resolveReviewThread(input: {threadId: $threadId}) {
+              thread { id isResolved }
+            }
+          }
+          """
+
+          try:
+              with open("/tmp/thread_ids.txt") as f:
+                  thread_ids = [l.strip() for l in f if l.strip()]
+          except FileNotFoundError:
+              print("No thread_ids.txt — skipping.")
+              exit(0)
+
+          def graphql(query, variables):
+              body = json.dumps({"query": query, "variables": variables}).encode()
+              req = urllib.request.Request(
+                  "https://api.github.com/graphql", data=body,
+                  headers={"Authorization": f"Bearer {GH_TOKEN}", "Content-Type": "application/json"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read())
+
+          for tid in thread_ids:
+              result = graphql(RESOLVE_MUTATION, {"threadId": tid})
+              if result.get("errors"):
+                  print(f"Failed to resolve {tid}: {result['errors']}")
+              else:
+                  print(f"Resolved {tid}")
+          print(f"Done — resolved {len(thread_ids)} threads.")
+          EOF
 
       - name: Request Copilot re-review
         if: steps.ctx.outputs.pr != '' && steps.threads.outcome == 'failure'
