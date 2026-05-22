@@ -41,16 +41,17 @@ jobs:
           # Find open branch with state file for this issue key
           branches = gh(f"/repos/{REPO}/git/refs/heads")
           branch = ""
+          github_issue_number = ""
           for b in branches:
               ref = b["ref"].replace("refs/heads/", "")
               if ref.startswith("feature/"):
-                  # Check if .aider_state.json exists on this branch
                   try:
                       content = gh(f"/repos/{REPO}/contents/.aider_state.json?ref={ref}")
                       import base64
                       state = json.loads(base64.b64decode(content["content"]).decode())
                       if state.get("issue_key") == ISSUE_KEY:
                           branch = ref
+                          github_issue_number = str(state.get("github_issue_number", ""))
                           break
                   except Exception:
                       pass
@@ -59,9 +60,10 @@ jobs:
               print(f"No feature branch found with aider state for {ISSUE_KEY}")
               exit(1)
 
-          print(f"Found branch: {branch}")
+          print(f"Found branch: {branch}, GitHub issue: {github_issue_number}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"branch={branch}\n")
+              f.write(f"github_issue_number={github_issue_number}\n")
           PYEOF
 
       - uses: actions/checkout@v4
@@ -107,20 +109,8 @@ jobs:
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
         run: |
           BRANCH="${{ steps.find-branch.outputs.branch }}"
+          ISSUE_NUMBER="${{ steps.find-branch.outputs.github_issue_number }}"
           git push origin "$BRANCH"
-
-          # Find the tracking GitHub issue
-          ISSUES=$(gh api "/repos/${{ github.repository }}/issues?labels=aider&state=open&per_page=50")
-          TASK_ID=$(echo "$BRANCH" | grep -oE 'T[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          ISSUE_NUMBER=$(echo "$ISSUES" | python3 -c "
-          import json,sys,re
-          issues=json.load(sys.stdin)
-          task_id='${TASK_ID}'
-          for i in issues:
-              if f'[{task_id}]' in (i.get('title') or ''):
-                  print(i['number'])
-                  break
-          ")
 
           TITLE=$(gh api "/repos/${{ github.repository }}/issues/${ISSUE_NUMBER}" --jq '.title')
           PR_BODY=$(printf 'Closes #%s\n\nImplemented by aider + Claude Sonnet 4.6 from Jira ticket %s.' \
