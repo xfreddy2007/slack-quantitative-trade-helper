@@ -103,9 +103,9 @@ jobs:
           git push origin "$BRANCH"
 
           GH_ISSUE_URL="https://github.com/${REPO}/issues/${ISSUE_NUMBER}"
-          curl -sf -X POST "${JIRA_WEBHOOK_BRANCH_READY}?issueKey=${ISSUE_KEY}" \
+          curl -sf -X POST "${JIRA_WEBHOOK_BRANCH_READY}" \
             -H "Content-Type: application/json" \
-            -d "{\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
+            -d "{\"issues\":[\"${ISSUE_KEY}\"],\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
           echo "Jira automation comment queued. Branch ${BRANCH} ready for local Claude Code session."
 
       # ── aider path ───────────────────────────────────────────────────────────

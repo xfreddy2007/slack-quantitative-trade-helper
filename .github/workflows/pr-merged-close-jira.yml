@@ -97,9 +97,9 @@ jobs:
           jira("POST", f"/issue/{issue_key}/transitions", {"transition": {"id": chosen["id"]}})
 
           WEBHOOK_URL = os.environ["JIRA_WEBHOOK_PR_MERGED"]
-          webhook_payload = json.dumps({"prUrl": PR_URL, "prTitle": PR_TITLE, "mergedBy": MERGED_BY}).encode()
+          webhook_payload = json.dumps({"issues": [issue_key], "prUrl": PR_URL, "prTitle": PR_TITLE, "mergedBy": MERGED_BY}).encode()
           req = urllib.request.Request(
-              f"{WEBHOOK_URL}?issueKey={issue_key}",
+              WEBHOOK_URL,
               data=webhook_payload,
               headers={"Content-Type": "application/json"},
               method="POST",
