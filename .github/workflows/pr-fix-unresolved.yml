@@ -1,8 +1,12 @@
 name: PR Review → Fix Unresolved Threads via Copilot
 
 on:
+  # Human reviews: trigger directly, no approval needed
   pull_request_review:
     types: [submitted]
+  # Copilot reviews: dispatched by pr-to-jira-review.yml after polling
+  repository_dispatch:
+    types: [check-pr-threads]
 
 permissions:
   contents: read
@@ -11,19 +15,30 @@ permissions:
 
 jobs:
   fix-unresolved:
-    # Only run on feature branches targeting dev
-    if: |
-      startsWith(github.event.pull_request.head.ref, 'feature/') &&
-      github.event.pull_request.base.ref == 'dev'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve PR number from event type
+        id: ctx
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "pr=${{ github.event.client_payload.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            HEAD="${{ github.event.pull_request.head.ref }}"
+            BASE="${{ github.event.pull_request.base.ref }}"
+            if [[ ! "$HEAD" =~ ^feature/ ]] || [ "$BASE" != "dev" ]; then
+              echo "pr=" >> "$GITHUB_OUTPUT"
+            else
+              echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Check unresolved threads and assign Copilot if needed
+        if: steps.ctx.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/fix_unresolved_agent.py \
             --repo "${{ github.repository }}" \
-            --pr "${{ github.event.pull_request.number }}"
+            --pr "${{ steps.ctx.outputs.pr }}"
