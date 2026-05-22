@@ -1,16 +1,76 @@
-# env files
+# ─────────────────────────────────────────────
+# Environment / Secrets
+# ─────────────────────────────────────────────
 .env
 .env.local
 .env.development
 .env.test
 .env.production
 
-# Ignore documentation files
+# ─────────────────────────────────────────────
+# Personal / Portfolio data
+# ─────────────────────────────────────────────
+portfolio.json
+portfolio.csv
+personal_portfolio.*
+user_wiki/
+alert_logs/
+
+# ─────────────────────────────────────────────
+# Node / TypeScript artifacts
+# ─────────────────────────────────────────────
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+coverage/
+.turbo/
+
+# ─────────────────────────────────────────────
+# Python artifacts
+# ─────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ─────────────────────────────────────────────
+# uv cache
+# ─────────────────────────────────────────────
+.uv/
+
+# ─────────────────────────────────────────────
+# Documentation generated files
+# ─────────────────────────────────────────────
 /PRD.md
 /DEVELOPMENT_SCHEDULE.md
 /IMPLEMENTATION_PLAN.md
 /docs/PROJECT_BREAKDOWN.md
 /docs/tasks/
 
-# aider working files (state file is force-added only when needed by automation)
+# ─────────────────────────────────────────────
+# aider working files
+# ─────────────────────────────────────────────
 .aider*
+
+# ─────────────────────────────────────────────
+# OS / Editor
+# ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
