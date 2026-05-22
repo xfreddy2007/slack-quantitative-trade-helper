@@ -1,16 +1,13 @@
 name: PR Review → Fix Unresolved Threads via aider
 
 on:
-  # Human reviews: trigger directly, no approval needed
   pull_request_review:
     types: [submitted]
-  # Copilot reviews: dispatched by pr-to-jira-review.yml after polling
   repository_dispatch:
     types: [check-pr-threads]
 
 permissions:
   contents: write
-  issues: write
   pull-requests: read
 
 jobs:
@@ -25,7 +22,7 @@ jobs:
         with:
           version: "latest"
 
-      - name: Resolve PR number from event type
+      - name: Resolve PR number
         id: ctx
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
@@ -33,14 +30,14 @@ jobs:
           else
             HEAD="${{ github.event.pull_request.head.ref }}"
             BASE="${{ github.event.pull_request.base.ref }}"
-            if [[ ! "$HEAD" =~ ^feature/ ]] || [ "$BASE" != "dev" ]; then
-              echo "pr=" >> "$GITHUB_OUTPUT"
-            else
+            if [[ "$HEAD" =~ ^feature/ ]] && [ "$BASE" = "dev" ]; then
               echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "pr=" >> "$GITHUB_OUTPUT"
             fi
           fi
 
-      - name: Check unresolved threads
+      - name: Fetch unresolved threads
         id: threads
         if: steps.ctx.outputs.pr != ''
         env:
@@ -48,11 +45,11 @@ jobs:
         run: |
           python3 scripts/fix_unresolved_agent.py \
             --repo "${{ github.repository }}" \
-            --pr "${{ steps.ctx.outputs.pr }}" \
-            --prompt-output /tmp/aider_fix_prompt.txt
-        continue-on-error: true  # exit 1 = threads found → run aider; exit 0 = all resolved
+            --pr  "${{ steps.ctx.outputs.pr }}" \
+            --output /tmp/aider_fix_prompt.txt
+        continue-on-error: true  # exit 1 = threads found
 
-      - name: Checkout feature branch and run aider fixes
+      - name: Run aider to fix threads
         if: steps.ctx.outputs.pr != '' && steps.threads.outcome == 'failure'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -65,16 +62,16 @@ jobs:
           git fetch origin "$BRANCH"
           git checkout "$BRANCH"
 
-          printf 'Fix these unresolved review comments. Do NOT ask for clarification. Implement all fixes now.\n\n%s' \
-            "$(cat /tmp/aider_fix_prompt.txt)" > /tmp/aider_full_prompt.txt
+          printf 'Fix all unresolved review comments below. Do NOT ask for clarification. Commit all fixes now.\n\n%s' \
+            "$(cat /tmp/aider_fix_prompt.txt)" > /tmp/full_prompt.txt
 
           uvx --from aider-chat aider \
             --model claude-sonnet-4-6 \
-            --message "$(cat /tmp/aider_full_prompt.txt)" \
+            --message "$(cat /tmp/full_prompt.txt)" \
             --yes \
             --auto-commits \
             --no-check-update \
             --no-gitignore
 
           git push origin "$BRANCH"
-          echo "aider fixes pushed to $BRANCH"
+          echo "Fixes pushed to $BRANCH"
