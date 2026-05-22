@@ -11,6 +11,7 @@ on:
     workflows:
       - "Jira Ticket → aider Implementation"
       - "aider Clarification Answered → Continue Implementation"
+      - "Feature Branch → Open PR"
     types: [completed]
 
 permissions:
