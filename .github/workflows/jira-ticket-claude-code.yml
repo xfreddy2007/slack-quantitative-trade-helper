@@ -1,0 +1,135 @@
+name: Jira Ticket → Claude Code Local Implementation
+
+on:
+  repository_dispatch:
+    types: [jira-ticket-started-claude]
+
+# Triggered by Jira Automation when a ticket is moved to In Progress and the
+# developer wants to implement locally using Claude Code CLI instead of aider.
+# This workflow only sets up the branch and notifies; the developer runs `claude`.
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Run PM agent
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          uv run --with anthropic scripts/pm_agent.py \
+            --issue-key "${{ github.event.client_payload.issue_key }}" \
+            --output /tmp/issue.json
+
+      - name: Create tracking issue
+        id: issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "aider" --color "7c3aed" \
+            --description "Implemented by aider + Claude Sonnet" \
+            --repo "${{ github.repository }}" 2>/dev/null || true
+
+          TITLE=$(jq -r '.title' /tmp/issue.json)
+          BODY=$(jq -r '.body' /tmp/issue.json)
+
+          ISSUE_URL=$(gh issue create \
+            --title "$TITLE" \
+            --body "$BODY" \
+            --label "aider" \
+            --repo "${{ github.repository }}")
+
+          ISSUE_NUMBER=$(basename "$ISSUE_URL")
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "Created issue #$ISSUE_NUMBER: $ISSUE_URL"
+
+      - name: Create and push feature branch
+        id: branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE=$(jq -r '.title' /tmp/issue.json)
+
+          TASK_ID=$(echo "$TITLE" | grep -oE 'T[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          SLUG=$(echo "$TITLE" | sed 's/\[.*\] //' | tr '[:upper:]' '[:lower:]' \
+                | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//g' | cut -c1-40)
+          BRANCH="feature/${TASK_ID}-${SLUG}"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+          echo "Branch pushed: $BRANCH"
+
+      - name: Post Jira comment with instructions
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.issue_number }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'EOF'
+          import base64, json, os, urllib.request
+
+          JIRA_URL    = os.environ["JIRA_URL"]
+          JIRA_EMAIL  = os.environ["JIRA_EMAIL"]
+          JIRA_TOKEN  = os.environ["JIRA_API_TOKEN"]
+          BRANCH      = os.environ["BRANCH"]
+          ISSUE_NUM   = os.environ["ISSUE_NUMBER"]
+          ISSUE_KEY   = os.environ["ISSUE_KEY"]
+          REPO        = os.environ["REPO"]
+
+          auth = "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_TOKEN}".encode()).decode()
+
+          gh_issue_url = f"https://github.com/{REPO}/issues/{ISSUE_NUM}"
+          text = (
+              f"Branch ready for local implementation: {BRANCH}\n\n"
+              f"To implement with Claude Code:\n"
+              f"  git fetch && git checkout {BRANCH}\n"
+              f"  claude\n\n"
+              f"GitHub issue for context: {gh_issue_url}\n\n"
+              f"When done, push branch — a PR will open automatically."
+          )
+
+          comment_body = {
+              "body": {
+                  "type": "doc", "version": 1,
+                  "content": [{"type": "paragraph", "content": [{"type": "text", "text": text}]}]
+              }
+          }
+          req = urllib.request.Request(
+              f"{JIRA_URL}/rest/api/3/issue/{ISSUE_KEY}/comment",
+              data=json.dumps(comment_body).encode(),
+              headers={"Authorization": auth, "Content-Type": "application/json", "Accept": "application/json"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req):
+              pass
+          print(f"Done. Branch {BRANCH} ready. Jira comment posted.")
+          EOF
