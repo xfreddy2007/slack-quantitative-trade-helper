@@ -113,13 +113,16 @@ def extract_question(output: str) -> str:
 # ---------------------------------------------------------------------------
 
 def save_state(issue_key: str, branch: str, original_message: str,
-               aider_output: str, round_: int) -> None:
+               aider_output: str, round_: int,
+               github_issue_number: str = "") -> None:
+    state = load_state() if round_ > 1 else {}
     STATE_FILE.write_text(json.dumps({
         "issue_key": issue_key,
         "branch": branch,
         "original_message": original_message,
         "aider_output": aider_output,
         "round": round_,
+        "github_issue_number": github_issue_number or state.get("github_issue_number", ""),
     }, indent=2))
     subprocess.run(["git", "add", "-f", str(STATE_FILE)], check=True)
     subprocess.run(["git", "commit", "-m", f"chore: save aider conversation state (round {round_})"], check=True)
@@ -144,6 +147,7 @@ def main() -> None:
     p_start.add_argument("--issue-key", required=True)
     p_start.add_argument("--branch", required=True)
     p_start.add_argument("--prompt-file", required=True)
+    p_start.add_argument("--github-issue-number", required=True)
 
     p_cont = sub.add_parser("continue")
     p_cont.add_argument("--issue-key", required=True)
@@ -176,7 +180,8 @@ def main() -> None:
             f"(branch: {state_branch})"
         )
         post_jira_comment(args.issue_key, comment)
-        save_state(args.issue_key, state_branch, prompt, question, round_=1)
+        save_state(args.issue_key, state_branch, prompt, question, round_=1,
+                   github_issue_number=args.github_issue_number)
         sys.exit(2)  # caller: push branch, do NOT open PR yet
 
     elif args.mode == "continue":

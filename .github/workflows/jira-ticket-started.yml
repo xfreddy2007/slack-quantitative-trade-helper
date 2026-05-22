@@ -92,7 +92,8 @@ jobs:
           uv run --with aider-chat scripts/aider_agent.py start \
             --issue-key "${{ github.event.client_payload.issue_key }}" \
             --branch "${{ steps.branch.outputs.branch }}" \
-            --prompt-file /tmp/aider_prompt.txt
+            --prompt-file /tmp/aider_prompt.txt \
+            --github-issue-number "${{ steps.issue.outputs.issue_number }}"
           echo "aider_exit=$?" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
