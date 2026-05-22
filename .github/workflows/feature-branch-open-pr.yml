@@ -1,0 +1,95 @@
+name: Feature Branch → Open PR
+
+on:
+  push:
+    branches: ['feature/**']
+
+# Fires when a developer pushes to a feature branch (Claude Code local flow).
+# Skipped for bot pushes — aider/CI open their own PRs.
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Check if PR already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --head "${{ github.ref_name }}" \
+            --base dev \
+            --state open \
+            --repo "${{ github.repository }}" \
+            --json number \
+            --jq '.[0].number // empty' 2>/dev/null || true)
+          echo "existing=$EXISTING" >> "$GITHUB_OUTPUT"
+
+      - name: Find GitHub issue for this branch
+        id: issue
+        if: steps.check.outputs.existing == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, re, urllib.request
+
+          GH_TOKEN = os.environ["GH_TOKEN"]
+          REPO     = os.environ["GITHUB_REPOSITORY"]
+          BRANCH   = os.environ["GITHUB_REF_NAME"]
+
+          m = re.search(r'feature/(T\d+\.\d+\.\d+)', BRANCH)
+          if not m:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("title=Implementation\nnumber=\n")
+              exit(0)
+          task_id = m.group(1)
+
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{REPO}/issues?labels=aider&state=open&per_page=50",
+              headers={"Authorization": f"Bearer {GH_TOKEN}", "Accept": "application/vnd.github+json"},
+          )
+          with urllib.request.urlopen(req) as r:
+              issues = json.loads(r.read())
+
+          title  = f"[{task_id}] Implementation"
+          number = ""
+          for issue in issues:
+              if f"[{task_id}]" in issue.get("title", ""):
+                  title  = issue["title"]
+                  number = str(issue["number"])
+                  break
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"title={title}\nnumber={number}\n")
+          EOF
+
+      - name: Open PR
+        if: steps.check.outputs.existing == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+          ISSUE_TITLE: ${{ steps.issue.outputs.title }}
+        run: |
+          BRANCH="${{ github.ref_name }}"
+
+          if [ -n "$ISSUE_NUMBER" ]; then
+            PR_BODY=$(printf 'Closes #%s\n\nImplemented locally with Claude Code.' "$ISSUE_NUMBER")
+          else
+            PR_BODY="Implemented locally with Claude Code."
+          fi
+
+          PR_URL=$(gh pr create \
+            --title "$ISSUE_TITLE" \
+            --body "$PR_BODY" \
+            --base dev \
+            --head "$BRANCH" \
+            --repo "${{ github.repository }}")
+
+          echo "PR opened: $PR_URL"

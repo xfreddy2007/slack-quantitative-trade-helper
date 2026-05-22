@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [jira-ticket-started]
 
+# client_payload: {issue_key, mode}
+# mode: "aider" (default) | "claude-code"
+
 permissions:
   contents: write
   issues: write
@@ -15,6 +18,12 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      - name: Set mode
+        id: mode
+        run: |
+          MODE="${{ github.event.client_payload.mode }}"
+          echo "value=${MODE:-aider}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           ref: dev
@@ -79,8 +88,71 @@ jobs:
             https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git checkout -b "$BRANCH"
 
+      # ── Claude Code path: push empty branch and notify dev ──────────────────
+
+      - name: Push branch and notify — Claude Code mode
+        if: steps.mode.outputs.value == 'claude-code'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.issue_number }}
+          ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
+          REPO: ${{ github.repository }}
+        run: |
+          git push origin "$BRANCH"
+
+          python3 - <<'EOF'
+          import base64, json, os, urllib.request
+
+          JIRA_URL   = os.environ["JIRA_URL"]
+          JIRA_EMAIL = os.environ["JIRA_EMAIL"]
+          JIRA_TOKEN = os.environ["JIRA_API_TOKEN"]
+          BRANCH     = os.environ["BRANCH"]
+          ISSUE_NUM  = os.environ["ISSUE_NUMBER"]
+          ISSUE_KEY  = os.environ["ISSUE_KEY"]
+          REPO       = os.environ["REPO"]
+
+          auth = "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_TOKEN}".encode()).decode()
+
+          gh_issue_url = f"https://github.com/{REPO}/issues/{ISSUE_NUM}"
+          body_text = (
+              f"Branch ready for local implementation: `{BRANCH}`\n\n"
+              f"To implement with Claude Code:\n"
+              f"  git fetch && git checkout {BRANCH}\n"
+              f"  claude\n\n"
+              f"GitHub issue for context: {gh_issue_url}\n\n"
+              f"When done, push and open a PR to dev."
+          )
+
+          comment_body = {
+              "body": {
+                  "type": "doc", "version": 1,
+                  "content": [{
+                      "type": "paragraph",
+                      "content": [{"type": "text", "text": body_text}]
+                  }]
+              }
+          }
+
+          req = urllib.request.Request(
+              f"{JIRA_URL}/rest/api/3/issue/{ISSUE_KEY}/comment",
+              data=json.dumps(comment_body).encode(),
+              headers={"Authorization": auth, "Content-Type": "application/json", "Accept": "application/json"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req):
+              pass
+          print(f"Jira comment posted. Branch {BRANCH} ready for local Claude Code session.")
+          EOF
+
+      # ── aider path ───────────────────────────────────────────────────────────
+
       - name: Run aider
         id: aider
+        if: steps.mode.outputs.value == 'aider'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           JIRA_URL: ${{ secrets.JIRA_URL }}
@@ -98,13 +170,13 @@ jobs:
         continue-on-error: true
 
       - name: Push branch — waiting for clarification (aider asked questions)
-        if: steps.aider.outcome == 'failure'
+        if: steps.mode.outputs.value == 'aider' && steps.aider.outcome == 'failure'
         run: |
           git push origin "${{ steps.branch.outputs.branch }}"
           echo "Branch pushed. Waiting for user to answer aider's question in Jira."
 
       - name: Push branch and open PR
-        if: steps.aider.outcome == 'success'
+        if: steps.mode.outputs.value == 'aider' && steps.aider.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
