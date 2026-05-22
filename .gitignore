@@ -11,3 +11,6 @@
 /IMPLEMENTATION_PLAN.md
 /docs/PROJECT_BREAKDOWN.md
 /docs/tasks/
+
+# aider working files (state file is force-added only when needed by automation)
+.aider*
