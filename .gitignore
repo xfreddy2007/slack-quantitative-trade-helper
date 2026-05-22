@@ -1,9 +1,33 @@
-# env files
+# Secrets & personal data
 .env
-.env.local
-.env.development
-.env.test
-.env.production
+.env.*
+!.env.example
+
+# Personal portfolio / wiki / alert output
+personal_portfolio/
+wiki_output/
+alert_logs/
+
+# Node
+node_modules/
+dist/
+.next/
+*.js.map
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# aider working files (state file is force-added only when needed by automation)
+.aider*
 
 # Ignore documentation files
 /PRD.md
@@ -11,6 +35,3 @@
 /IMPLEMENTATION_PLAN.md
 /docs/PROJECT_BREAKDOWN.md
 /docs/tasks/
-
-# aider working files (state file is force-added only when needed by automation)
-.aider*
