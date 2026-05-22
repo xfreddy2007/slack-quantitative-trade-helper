@@ -177,19 +177,74 @@ The automations extract the task ID (`T1.1.1`) from the branch name to locate th
 
 ---
 
-## Local development
+## Prerequisites
+
+| Tool | Version |
+|---|---|
+| Node.js | v20+ (via nvm) |
+| Python | 3.13+ |
+| Docker | 24+ |
+| uv | 0.4+ |
+
+## Quick Start
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/xfreddy2007/slack-quantitative-trade-helper.git
+   cd slack-quantitative-trade-helper
+   ```
+
+2. **Copy env and fill values**
+   ```bash
+   cp .env.example .env
+   # edit .env with your credentials
+   ```
+
+3. **Start PostgreSQL**
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Install TypeScript deps**
+   ```bash
+   cd apps/slack-bot && npm install
+   ```
+
+5. **Install Python deps**
+   ```bash
+   cd research/quant-python && uv sync
+   ```
+
+6. **Run TypeScript tests**
+   ```bash
+   cd apps/slack-bot && npm test
+   ```
+
+7. **Run Python tests**
+   ```bash
+   cd research/quant-python && uv run pytest
+   ```
+
+## Docs
+
+- [PRD](PRD.md) — product requirements
+- [Implementation Plan](IMPLEMENTATION_PLAN.md) — architecture decisions and milestones
+
+## Branch Strategy
+
+```
+feature/* → dev → staging → main
+```
+
+Feature branches merge to `dev`. `dev` → `staging` for QA. `staging` → `main` for production.
+
+## Local Development
 
 ```bash
-# Install dependencies
-nvm use && npm install
+# Run Slack bot locally (hot reload)
+cd apps/slack-bot && npm run dev
 
-# Python quant core
-cd research/quant-python && uv sync
-
-# Run Slack bot locally
-npm run dev
-
-# Run tests
-npm test
+# Run all tests
+cd apps/slack-bot && npm test
 cd research/quant-python && uv run pytest
 ```
