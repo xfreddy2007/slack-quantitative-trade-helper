@@ -1,16 +1,54 @@
-# env files
+# ── Secrets / env files ────────────────────────────────────────
 .env
-.env.local
-.env.development
-.env.test
-.env.production
+.env.*
+!.env.example
 
-# Ignore documentation files
+# ── Personal portfolio data ────────────────────────────────────
+portfolio.json
+my_portfolio.*
+*_personal.*
+
+# ── User wiki output ────────────────────────────────────────────
+wiki_output/
+user_wiki/
+*.wiki.md
+
+# ── Alert logs ──────────────────────────────────────────────────
+alerts/
+*.alert.log
+
+# ── Node artifacts ──────────────────────────────────────────────
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# ── Python artifacts ────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+.uv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ── OS / editor ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ── Project-specific ignored docs (kept local only) ─────────────
 /PRD.md
 /DEVELOPMENT_SCHEDULE.md
 /IMPLEMENTATION_PLAN.md
 /docs/PROJECT_BREAKDOWN.md
 /docs/tasks/
 
-# aider working files (state file is force-added only when needed by automation)
+# ── knowledge output (generated, user-specific) ─────────────────
+knowledge/raw/
+knowledge/wiki/
+knowledge/evaluations/
+
+# ── aider working files ──────────────────────────────────────────
 .aider*
