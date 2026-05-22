@@ -96,8 +96,9 @@ jobs:
           GH_ISSUE_URL="https://github.com/${REPO}/issues/${ISSUE_NUMBER}"
           PAYLOAD="{\"issues\":[\"${ISSUE_KEY}\"],\"branch\":\"${BRANCH}\",\"ghIssueUrl\":\"${GH_ISSUE_URL}\"}"
           HTTP_CODE=$(curl -s -o /tmp/jira_response.txt -w "%{http_code}" \
-            -X POST "${JIRA_WEBHOOK_BRANCH_READY}?token=${JIRA_WEBHOOK_BRANCH_READY_TOKEN}" \
+            -X POST "${JIRA_WEBHOOK_BRANCH_READY}" \
             -H "Content-Type: application/json" \
+            -H "X-Automation-Webhook-Token: ${JIRA_WEBHOOK_BRANCH_READY_TOKEN}" \
             -d "$PAYLOAD")
           echo "HTTP status: $HTTP_CODE"
           echo "Response: $(cat /tmp/jira_response.txt)"
