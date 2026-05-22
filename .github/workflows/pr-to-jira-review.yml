@@ -164,39 +164,3 @@ jobs:
           print(f"Done. {issue_key} → '{chosen['name']}' with PR comment.")
           EOF
 
-      - name: Request Copilot code review
-        if: steps.ctx.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api \
-            --method POST \
-            "/repos/${{ github.repository }}/pulls/${{ steps.ctx.outputs.pr_number }}/requested_reviewers" \
-            --field 'reviewers[]=copilot-pull-request-reviewer[bot]' \
-            && echo "Copilot review requested" \
-            || echo "Copilot review request skipped (already requested or not available)"
-        continue-on-error: true
-
-      - name: Poll for Copilot review then dispatch thread check
-        if: steps.ctx.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR="${{ steps.ctx.outputs.pr_number }}"
-          REPO="${{ github.repository }}"
-          for i in $(seq 1 6); do
-            sleep 30
-            COUNT=$(gh api "/repos/$REPO/pulls/$PR/reviews" \
-              --jq '[.[] | select(.user.login | test("copilot"; "i"))] | length' 2>/dev/null || echo 0)
-            if [ "$COUNT" -gt "0" ]; then
-              echo "Copilot review found after ${i}x30s. Dispatching check-pr-threads."
-              gh api repos/$REPO/dispatches \
-                --method POST \
-                -f event_type=check-pr-threads \
-                -F "client_payload[pr_number]=$PR"
-              exit 0
-            fi
-            echo "Waiting for Copilot review... ($i/6)"
-          done
-          echo "Copilot review not detected within 3 min — skipping dispatch."
-        continue-on-error: true

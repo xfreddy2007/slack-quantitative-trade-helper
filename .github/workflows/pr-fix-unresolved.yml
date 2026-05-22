@@ -3,8 +3,6 @@ name: PR Review → Fix Unresolved Threads via aider
 on:
   pull_request_review:
     types: [submitted]
-  repository_dispatch:
-    types: [check-pr-threads]
 
 permissions:
   contents: write
@@ -30,16 +28,12 @@ jobs:
       - name: Resolve PR number
         id: ctx
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "pr=${{ github.event.client_payload.pr_number }}" >> "$GITHUB_OUTPUT"
+          HEAD="${{ github.event.pull_request.head.ref }}"
+          BASE="${{ github.event.pull_request.base.ref }}"
+          if [[ "$HEAD" =~ ^feature/ ]] && [ "$BASE" = "dev" ]; then
+            echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           else
-            HEAD="${{ github.event.pull_request.head.ref }}"
-            BASE="${{ github.event.pull_request.base.ref }}"
-            if [[ "$HEAD" =~ ^feature/ ]] && [ "$BASE" = "dev" ]; then
-              echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-            else
-              echo "pr=" >> "$GITHUB_OUTPUT"
-            fi
+            echo "pr=" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Fetch unresolved threads
