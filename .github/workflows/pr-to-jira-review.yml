@@ -156,7 +156,7 @@ jobs:
           req = urllib.request.Request(
               WEBHOOK_URL,
               data=webhook_payload,
-              headers={"Content-Type": "application/json", "Authorization": f"Bearer {WEBHOOK_TOKEN}"},
+              headers={"Content-Type": "application/json", "X-Automation-Webhook-Token": WEBHOOK_TOKEN},
               method="POST",
           )
           with urllib.request.urlopen(req):
