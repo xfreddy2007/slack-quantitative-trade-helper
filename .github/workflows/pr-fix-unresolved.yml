@@ -65,13 +65,12 @@ jobs:
           git fetch origin "$BRANCH"
           git checkout "$BRANCH"
 
-          PROMPT="Fix these unresolved review comments. Do NOT ask for clarification. Implement all fixes now.
-
-$(cat /tmp/aider_fix_prompt.txt)"
+          printf 'Fix these unresolved review comments. Do NOT ask for clarification. Implement all fixes now.\n\n%s' \
+            "$(cat /tmp/aider_fix_prompt.txt)" > /tmp/aider_full_prompt.txt
 
           uvx --from aider-chat aider \
             --model claude-sonnet-4-6 \
-            --message "$PROMPT" \
+            --message "$(cat /tmp/aider_full_prompt.txt)" \
             --yes \
             --auto-commits \
             --no-check-update \
