@@ -83,7 +83,8 @@ def run_aider(message: str) -> str:
          "--message", message,
          "--yes",
          "--auto-commits",
-         "--no-check-update"],
+         "--no-check-update",
+         "--no-gitignore"],
         capture_output=True, text=True,
     )
     output = result.stdout + result.stderr
@@ -120,7 +121,7 @@ def save_state(issue_key: str, branch: str, original_message: str,
         "aider_output": aider_output,
         "round": round_,
     }, indent=2))
-    subprocess.run(["git", "add", str(STATE_FILE)], check=True)
+    subprocess.run(["git", "add", "-f", str(STATE_FILE)], check=True)
     subprocess.run(["git", "commit", "-m", f"chore: save aider conversation state (round {round_})"], check=True)
 
 
@@ -196,7 +197,7 @@ def main() -> None:
             # Remove state file now that we're done
             if STATE_FILE.exists():
                 STATE_FILE.unlink()
-                subprocess.run(["git", "add", str(STATE_FILE)], check=True)
+                subprocess.run(["git", "add", "-f", str(STATE_FILE)], check=True)
                 subprocess.run(["git", "commit", "-m", "chore: clear aider conversation state"], check=True)
             sys.exit(0)
 
