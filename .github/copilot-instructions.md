@@ -149,11 +149,19 @@ Rules:
 
 ### Branch Workflow
 - The repository must maintain these branches: `main`, `staging`, and `dev`.
+- `dev` is the default branch for active coding and integration work.
+- `staging` is the release-candidate branch for validation before production.
 - `main` is the stable production branch.
-- `staging` is for release candidate validation before merging to `main`.
-- `dev` is the default integration branch for active development.
-- Feature work should branch from `dev` and merge back into `dev`.
-- Promote changes in order: `dev` → `staging` → `main`.
+- All implementation work must be done on `dev` or on short-lived feature branches created from `dev`.
+- Feature branches must merge back into `dev` first.
+- Do not commit feature or task implementation work directly to `staging` or `main`.
+- Release flow:
+  1. Finish and verify work on `dev`.
+  2. Merge `dev` into `staging` for release-candidate validation.
+  3. Bump the project version on `staging` as part of the release-candidate preparation.
+  4. Run release validation on `staging`.
+  5. Merge `staging` into `main` only after validation passes.
+- Promotion order is always `dev` → `staging` → `main`.
 
 ### When DESIGN_SPEC Exists (Phase 3)
 - **All classNames must follow DESIGN_SPEC definitions**
