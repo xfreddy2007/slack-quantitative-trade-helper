@@ -13,6 +13,11 @@ permissions:
 jobs:
   fix-unresolved:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'pull_request_review' &&
+       startsWith(github.event.pull_request.head.ref, 'feature/') &&
+       github.event.pull_request.base.ref == 'dev')
     steps:
       - uses: actions/checkout@v4
         with:
