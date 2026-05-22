@@ -152,10 +152,30 @@ def build_issue_body(pr: int, pr_title: str, branch: str, threads: list, pr_url:
     return "\n".join(lines)
 
 
+def build_aider_prompt(pr: int, pr_title: str, branch: str, threads: list, pr_url: str) -> str:
+    lines = [
+        f"Fix the following unresolved code review comments on PR #{pr} ({pr_url}).",
+        f"Branch: {branch}",
+        "Address each reviewer concern by modifying the relevant file.",
+        "Do NOT create a new branch. Commit fixes to the current branch.",
+        "",
+    ]
+    for i, thread in enumerate(threads, 1):
+        comment = thread["comments"]["nodes"][0]
+        path = comment.get("path") or "(general)"
+        line = comment.get("line") or ""
+        body = comment["body"].strip()
+        loc  = f"`{path}`" + (f" line {line}" if line else "")
+        lines += [f"## Thread {i} — {loc}", body, ""]
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True, help="owner/repo")
     parser.add_argument("--pr",   required=True, type=int)
+    parser.add_argument("--prompt-output", default="/tmp/aider_fix_prompt.txt",
+                        help="File to write aider fix prompt (used when threads found)")
     args = parser.parse_args()
 
     owner, repo_name = args.repo.split("/", 1)
@@ -174,10 +194,10 @@ def main() -> None:
             gh("PATCH", f"/repos/{args.repo}/issues/{existing_issue}",
                {"state": "closed", "state_reason": "completed"})
             gh("POST", f"/repos/{args.repo}/issues/{existing_issue}/comments",
-               {"body": f"All review threads resolved. Closing. ✅"})
+               {"body": "All review threads resolved. Closing. ✅"})
         sys.exit(0)
 
-    ensure_label(args.repo, "copilot-fix", "e4e669", "Unresolved review comments for Copilot to fix")
+    ensure_label(args.repo, "copilot-fix", "e4e669", "Unresolved review comments for aider to fix")
 
     body = build_issue_body(args.pr, pr_title, branch, unresolved, pr_url)
     title = f"[Fix] Unresolved review comments on PR #{args.pr}: {pr_title}"
@@ -196,16 +216,16 @@ def main() -> None:
         issue_number = issue["number"]
         print(f"  Created issue #{issue_number}")
 
-        # Assign @copilot
-        try:
-            gh("POST", f"/repos/{args.repo}/issues/{issue_number}/assignees",
-               {"assignees": ["copilot"]})
-            print(f"  Assigned @copilot to issue #{issue_number}")
-        except HTTPError as e:
-            print(f"  Could not assign @copilot: {e.code} — assign manually.", file=sys.stderr)
+    # Write aider prompt and branch name for the workflow to consume
+    prompt = build_aider_prompt(args.pr, pr_title, branch, unresolved, pr_url)
+    with open(args.prompt_output, "w") as f:
+        f.write(prompt)
+    with open("/tmp/fix_branch.txt", "w") as f:
+        f.write(branch)
 
-    print(f"Done. Issue #{issue_number} has {len(unresolved)} thread(s) for Copilot to fix.")
+    print(f"Done. Issue #{issue_number} has {len(unresolved)} thread(s) for aider to fix.")
     print(f"  {pr_url}")
+    sys.exit(1)  # signals workflow: threads found, run aider
 
 
 if __name__ == "__main__":
