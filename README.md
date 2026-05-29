@@ -4,6 +4,8 @@ A Slack-based quantitative investment assistant. Delivers daily portfolio recomm
 
 **Stack:** TypeScript (Slack Bolt) · Python (quant/ML) · PostgreSQL (Neon) · Fly.io · GitHub Actions
 
+**Docs:** [PRD.md](PRD.md) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+
 ---
 
 ## Automated Development Pipeline

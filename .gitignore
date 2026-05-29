@@ -14,3 +14,28 @@
 
 # aider working files (state file is force-added only when needed by automation)
 .aider*
+
+# Personal portfolio and user-specific output
+knowledge/wiki/
+knowledge/raw/
+knowledge/evaluations/
+
+# Alert logs
+*.alert.log
+logs/
+
+# Node.js
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
