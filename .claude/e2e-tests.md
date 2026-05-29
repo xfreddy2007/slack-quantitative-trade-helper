@@ -72,7 +72,7 @@ If `POSTGRES_TIMEOUT` → abort: ❌ PostgreSQL did not become healthy within 60
 
 ### S4 — Apply Prisma migrations
 
-**Requires: Phase 1 active**
+**Requires: PHASE1_SCHEMA active**
 
 ```bash
 cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && \
@@ -90,20 +90,32 @@ Run each check. Record label as `ACTIVE` or `INACTIVE`.
 ```bash
 ROOT=/Users/xfreddy2007/Documents/Self-projects/investment-helper
 
-# Phase 1 — DB and TS/Python package scaffolds exist
+# Phase 1a — TS/Python package scaffolds exist (T-0101, T-0102)
+test -f "$ROOT/apps/slack-bot/package.json" \
+  && test -f "$ROOT/research/quant-python/pyproject.toml" \
+  && echo "PHASE1_SCAFFOLD=ACTIVE" || echo "PHASE1_SCAFFOLD=INACTIVE"
+
+# Phase 1b — Prisma schema exists (T-0103); gating DB-dependent tests
+test -f "$ROOT/db/prisma/schema.prisma" \
+  && echo "PHASE1_SCHEMA=ACTIVE" || echo "PHASE1_SCHEMA=INACTIVE"
+
+# Phase 1 — combined: scaffold + schema (legacy alias; used by downstream checks)
 test -f "$ROOT/apps/slack-bot/package.json" \
   && test -f "$ROOT/research/quant-python/pyproject.toml" \
   && test -f "$ROOT/db/prisma/schema.prisma" \
   && echo "PHASE1=ACTIVE" || echo "PHASE1=INACTIVE"
 
-# Phase 2 — Fixture assets created
-test -d "$ROOT/packages/fixtures/portfolios" \
-  && test -d "$ROOT/packages/fixtures/prices" \
-  && test -d "$ROOT/packages/fixtures/news" \
+# Phase 2 — Fixture asset JSON files created (T-0201 to T-0204)
+# Check for actual files, not just directories (dirs exist from T1.1.1 skeleton)
+find "$ROOT/packages/fixtures/portfolios" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
+  && find "$ROOT/packages/fixtures/prices" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
+  && find "$ROOT/packages/fixtures/news" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
   && echo "PHASE2=ACTIVE" || echo "PHASE2=INACTIVE"
 
-# Phase 3 — TypeScript app shell implemented
+# Phase 3 — TypeScript app shell implemented (config + db + renderer + command router)
 test -f "$ROOT/apps/slack-bot/src/config/index.ts" \
+  && test -f "$ROOT/apps/slack-bot/src/db/prismaClient.ts" \
+  && test -f "$ROOT/apps/slack-bot/src/renderers/dailyRecommendation.ts" \
   && echo "PHASE3=ACTIVE" || echo "PHASE3=INACTIVE"
 
 # Phase 4 — Python quant core implemented
@@ -148,22 +160,107 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 - Already verified in Infrastructure Setup S3. Record PASS if S3 passed.
 
 #### T0.2 — Prisma schema validates
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCHEMA
 - Command: `npx prisma validate --schema /Users/xfreddy2007/Documents/Self-projects/investment-helper/db/prisma/schema.prisma`
 - Verify: exit code 0
 - Type: happy path
 
 #### T0.3 — TypeScript test suite passes
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCAFFOLD
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npm test 2>&1`
 - Verify: exit code 0
 - Type: happy path
 
 #### T0.4 — Python test suite passes
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCAFFOLD
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest 2>&1`
 - Verify: exit code 0
 - Type: happy path
+
+#### T0.5 — TypeScript build produces no type errors
+- **Phase**: PHASE1_SCAFFOLD
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npm run typecheck 2>&1`
+- Verify: exit code 0, no type errors
+- Type: happy path
+
+#### T0.6 — Python package installs without errors
+- **Phase**: PHASE1_SCAFFOLD
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv sync 2>&1`
+- Verify: exit code 0
+- Type: happy path
+
+---
+
+### Group 0A — Shared Schemas and Database Seed
+**Phase**: PHASE1_SCHEMA
+**Purpose**: Prisma migration applies cleanly, shared Zod schemas compile, and DB seed is idempotent.
+
+#### T0A.1 — Prisma migration applies to clean local DB
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npx prisma migrate deploy --schema db/prisma/schema.prisma 2>&1`
+- Verify: exit code 0, migration completes without errors
+- Type: happy path
+
+#### T0A.2 — Zod schemas import and compile without TypeScript errors
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/providers/fixtures/index.ts').then(() => { console.log('OK'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })" 2>&1`
+- Verify: exit code 0, output contains `OK`
+- Type: happy path
+
+#### T0A.3 — DB seed inserts schema_versions row
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npx tsx db/seeds/seed.ts 2>&1`
+- Verify: exit code 0, output confirms at least one `schema_versions` row inserted
+- Type: happy path
+
+#### T0A.4 — DB seed is idempotent on re-run
+- Command: run seed script twice in sequence
+- Verify: second run exits 0, no duplicate key errors, row count unchanged
+- Type: edge case
+
+#### T0A.5 — Missing DATABASE_URL produces a clear startup error (not a crash)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && DATABASE_URL="" npx tsx src/config/index.ts 2>&1`
+- Verify: exit code non-zero, output contains readable error about `DATABASE_URL`; no unhandled exception stack trace without context
+- Type: error case
+
+---
+
+### Group 0B — TypeScript App Shell
+**Phase**: Phase 3 (`PHASE3=ACTIVE`)
+**Purpose**: Env validation, DB client, provider adapter, renderer, and command router are correct in isolation.
+
+#### T0B.1 — Valid env passes Zod validation without error
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/config/index.ts').then(m => { console.log('VALID'); process.exit(0); }).catch(e => { console.error(e.message); process.exit(1); })" 2>&1`
+- Verify: exit code 0, output contains `VALID`
+- Type: happy path
+
+#### T0B.2 — Missing SLACK_BOT_TOKEN throws Zod validation error with field name
+- Command: same as T0B.1 but with `SLACK_BOT_TOKEN=""` prefix
+- Verify: exit code non-zero, output contains `SLACK_BOT_TOKEN` in error message
+- Type: error case
+
+#### T0B.3 — Prisma client wrapper connects to local DB and reads schema_versions
+- Command: integration test in `apps/slack-bot/tests/integration/db/prismaClient.test.ts`
+- Verify: exit code 0, query returns at least 1 row from `schema_versions`
+- **Depends on**: T0A.3 (seed has run)
+- Type: happy path
+
+#### T0B.4 — Fixture provider adapter contract test passes
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/providers/fixtureAdapter.test.ts 2>&1`
+- Verify: exit code 0, normalized source records have required fields (`symbol`, `source`, `timestamp`)
+- Type: happy path
+
+#### T0B.5 — Slack daily recommendation renderer includes Traditional Chinese section headings
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/unit/renderers/dailyRecommendation.snapshot.test.ts 2>&1`
+- Verify: exit code 0, output contains `今日觀察`, `可考慮調整`, `不建議動作`
+- Type: happy path
+
+#### T0B.6 — Slack renderer includes paper-only disclaimer
+- Command: same snapshot test
+- Verify: output contains text indicating no broker order will be placed
+- Type: happy path (negative assertion)
+
+#### T0B.7 — Unknown Slack subcommand returns usage help without error stack
+- Command: integration test for command router with unknown input
+- Verify: response text contains usage hint, no unhandled exception output
+- Type: error case
 
 ---
 
@@ -207,6 +304,16 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Phase**: Phase 4
 **Purpose**: Allocation calculation is correct for all portfolio types.
 **Depends on**: Group 1 (fixtures loaded)
+
+#### T2.0 — Python Pydantic settings loads valid config without error
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/config/test_settings.py -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: happy path
+
+#### T2.0b — Python settings raises ValidationError when DATABASE_URL missing
+- Command: `uv run pytest tests/config/test_settings.py::test_missing_database_url -v 2>&1`
+- Verify: exit code 0, `PASSED` (test expects ValidationError)
+- Type: error case
 
 #### T2.1 — Taiwan ETF allocation percentages sum to 100
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/portfolio/test_allocation.py::test_tw_etf_allocation_sums_to_100 -v 2>&1`
@@ -623,6 +730,9 @@ When a new feature, milestone task, or Slack command is implemented, add test ca
 
 - Find the matching group (by phase and domain), or create a new Group N.
 - If creating a new group: add a phase detection check in the **Phase Detection** section.
+- Groups between 0 and 1 use alpha suffixes (0A, 0B, 0C…) so Group 1-12 numbers stay stable.
+- PHASE1_SCAFFOLD: tests that only need package.json / pyproject.toml.
+- PHASE1_SCHEMA: tests that need db/prisma/schema.prisma to exist.
 
 ### Case format
 
