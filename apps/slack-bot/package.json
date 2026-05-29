@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx tsx src/db/seed.ts"
+  },
+  "prisma": {
+    "schema": "../../db/prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

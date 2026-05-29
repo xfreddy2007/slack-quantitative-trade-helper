@@ -1,0 +1,277 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Schema Versioning ────────────────────────────────────────────────────────
+
+model SchemaVersion {
+  id          String   @id @default(cuid())
+  version     String   @unique
+  description String?
+  appliedAt   DateTime @default(now())
+
+  @@map("schema_versions")
+}
+
+// ─── Source Ingestion ─────────────────────────────────────────────────────────
+
+model ProviderRun {
+  id           String    @id @default(cuid())
+  provider     String
+  status       String    // success | rate_limit | quota_exceeded | timeout | failed
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  requestCount Int       @default(0)
+  errorMessage String?
+  metadata     Json?
+
+  marketSnapshots MarketSnapshot[]
+
+  @@map("provider_runs")
+}
+
+model Source {
+  id            String    @id @default(cuid())
+  provider      String
+  url           String
+  title         String
+  publishedAt   DateTime?
+  retrievedAt   DateTime  @default(now())
+  author        String?
+  rawPath       String?
+  licensePolicy String?
+  hash          String    @unique
+
+  documents    SourceDocument[]
+  newsAnalyses NewsAnalysis[]
+
+  @@map("sources")
+}
+
+model SourceDocument {
+  id          String   @id @default(cuid())
+  sourceId    String
+  contentType String   @default("text/plain")
+  content     String
+  filePath    String?
+  extractedAt DateTime @default(now())
+
+  source Source @relation(fields: [sourceId], references: [id])
+
+  @@map("source_documents")
+}
+
+// ─── Market Data ──────────────────────────────────────────────────────────────
+
+model MarketSnapshot {
+  id            String   @id @default(cuid())
+  symbol        String
+  market        String   // TW | US
+  price         Decimal
+  currency      String
+  volume        BigInt?
+  changePct     Decimal?
+  timestamp     DateTime
+  provider      String
+  providerRunId String?
+
+  providerRun ProviderRun? @relation(fields: [providerRunId], references: [id])
+
+  @@map("market_snapshots")
+}
+
+// ─── Portfolio ────────────────────────────────────────────────────────────────
+
+model PortfolioSnapshot {
+  id            String   @id @default(cuid())
+  snapshotDate  DateTime
+  totalValueUsd Decimal?
+  cashPct       Decimal?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  holdings             Holding[]
+  dailyRecommendations DailyRecommendation[]
+  paperRecommendations PaperRecommendation[]
+
+  @@map("portfolio_snapshots")
+}
+
+model Holding {
+  id                  String   @id @default(cuid())
+  portfolioSnapshotId String
+  symbol              String
+  market              String   // TW | US
+  assetType           String   // ETF | stock | cash
+  quantity            Decimal
+  costBasis           Decimal?
+  avgCost             Decimal?
+  currency            String
+  strategy            String?
+  targetBucket        String?
+  riskLimits          Json?
+
+  portfolioSnapshot PortfolioSnapshot @relation(fields: [portfolioSnapshotId], references: [id])
+
+  @@map("holdings")
+}
+
+model AllocationTarget {
+  id                String   @id @default(cuid())
+  bucket            String   @unique
+  targetPct         Decimal
+  driftThresholdPct Decimal
+  markets           String[]
+  assetTypes        String[]
+  allowedSymbols    String[]
+  restrictedActions String[]
+
+  @@map("allocation_targets")
+}
+
+// ─── News Analysis ────────────────────────────────────────────────────────────
+
+model NewsAnalysis {
+  id              String   @id @default(cuid())
+  sourceId        String
+  summary         String
+  entities        Json?
+  tickers         String[]
+  topics          String[]
+  riskTags        String[]
+  assetClasses    String[]
+  impactDirection String?  // positive | negative | neutral | mixed
+  severity        Int
+  confidence      Int
+  citations       Json?
+  market          String?  // TW | US | GLOBAL
+  createdAt       DateTime @default(now())
+
+  source Source @relation(fields: [sourceId], references: [id])
+
+  @@map("news_analyses")
+}
+
+// ─── Trigger Engine ───────────────────────────────────────────────────────────
+
+model TriggerEvaluation {
+  id                  String   @id @default(cuid())
+  eventIds            String[]
+  portfolioSymbols    String[]
+  severity            Int
+  confidence          Int
+  novelty             Int?
+  relevance           Int
+  suggestedAction     String
+  actionSize          String?
+  rationale           String
+  humanReviewRequired Boolean  @default(false)
+  modelVersion        String?
+  schemaVersion       String?
+  createdAt           DateTime @default(now())
+
+  slackMessages SlackMessage[]
+
+  @@map("trigger_evaluations")
+}
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+model DailyRecommendation {
+  id                     String   @id @default(cuid())
+  market                 String   // TW | US | GLOBAL
+  portfolioSnapshotId    String
+  recommendationDate     DateTime
+  observations           String[]
+  recommendedAdjustments Json
+  noActionRationale      String?
+  riskLevel              Int?
+  confidence             Int?
+  citations              Json?
+  modelVersion           String?
+  createdAt              DateTime @default(now())
+
+  portfolioSnapshot PortfolioSnapshot @relation(fields: [portfolioSnapshotId], references: [id])
+
+  @@map("daily_recommendations")
+}
+
+model PaperRecommendation {
+  id                  String   @id @default(cuid())
+  sourceType          String   // trigger | routine_rebalance
+  sourceId            String?
+  symbol              String
+  market              String   // TW | US
+  action              String
+  suggestedSizeMinPct Decimal?
+  suggestedSizeMaxPct Decimal?
+  rationale           String
+  confidence          Int
+  portfolioSnapshotId String
+  evaluationStatus    String   @default("pending") // pending | evaluated
+  outcomeNotes        String?
+  createdAt           DateTime @default(now())
+
+  portfolioSnapshot PortfolioSnapshot @relation(fields: [portfolioSnapshotId], references: [id])
+  paperEvaluations  PaperEvaluation[]
+  feedbackEvents    FeedbackEvent[]
+
+  @@map("paper_recommendations")
+}
+
+model PaperEvaluation {
+  id                       String   @id @default(cuid())
+  paperRecommendationId    String
+  horizonDays              Int      // 20 | 60 | 120
+  returnPct                Decimal?
+  volatilityNote           String?
+  drawdownNote             String?
+  disciplineScore          Decimal?
+  disciplineClassification String?  // improved | unchanged | worsened
+  priceDataAvailable       Boolean  @default(true)
+  deferredReason           String?
+  evaluatedAt              DateTime @default(now())
+  createdAt                DateTime @default(now())
+
+  paperRecommendation PaperRecommendation @relation(fields: [paperRecommendationId], references: [id])
+
+  @@map("paper_evaluations")
+}
+
+// ─── Slack ────────────────────────────────────────────────────────────────────
+
+model SlackMessage {
+  id          String    @id @default(cuid())
+  triggerId   String?
+  slackChannel String
+  slackTs     String?
+  renderedText String
+  status      String    @default("pending") // pending | posted | failed
+  postedAt    DateTime?
+  feedback    String?
+
+  triggerEvaluation TriggerEvaluation? @relation(fields: [triggerId], references: [id])
+  feedbackEvents    FeedbackEvent[]
+
+  @@map("slack_messages")
+}
+
+model FeedbackEvent {
+  id                    String   @id @default(cuid())
+  slackMessageId        String?
+  paperRecommendationId String?
+  userId                String?
+  feedback              String   // useful | not_useful | too_noisy | too_late
+  createdAt             DateTime @default(now())
+
+  slackMessage        SlackMessage?        @relation(fields: [slackMessageId], references: [id])
+  paperRecommendation PaperRecommendation? @relation(fields: [paperRecommendationId], references: [id])
+
+  @@map("feedback_events")
+}
