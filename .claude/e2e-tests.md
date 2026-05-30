@@ -118,7 +118,12 @@ test -f "$ROOT/apps/slack-bot/src/config/index.ts" \
   && test -f "$ROOT/apps/slack-bot/src/renderers/dailyRecommendation.ts" \
   && echo "PHASE3=ACTIVE" || echo "PHASE3=INACTIVE"
 
-# Phase 4 — Python quant core implemented
+# Phase 4a — Portfolio models + allocation + drift (T2.1.1)
+test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocation.py" \
+  && test -f "$ROOT/research/quant-python/src/investment_research/portfolio/drift.py" \
+  && echo "PHASE4_ALLOCATION=ACTIVE" || echo "PHASE4_ALLOCATION=INACTIVE"
+
+# Phase 4 — Full quant core including daily recommendation job
 test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocation.py" \
   && test -f "$ROOT/research/quant-python/src/investment_research/jobs/generate_daily_recommendations.py" \
   && echo "PHASE4=ACTIVE" || echo "PHASE4=INACTIVE"
@@ -302,9 +307,9 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 ---
 
 ### Group 2 — Portfolio Models and Allocation
-**Phase**: Phase 4
+**Phase**: PHASE4_ALLOCATION
 **Purpose**: Allocation calculation is correct for all portfolio types.
-**Depends on**: Group 1 (fixtures loaded)
+**Depends on**: fixture JSON files in packages/fixtures/ (PHASE2)
 
 #### T2.0 — Python Pydantic settings loads valid config without error
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/config/test_settings.py -v 2>&1`
@@ -349,7 +354,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 ---
 
 ### Group 3 — Drift Detection and Rebalancing
-**Phase**: Phase 4
+**Phase**: PHASE4_ALLOCATION
 **Purpose**: Drift thresholds and rebalancing rules fire correctly.
 
 #### T3.1 — Allocation within threshold produces no-action
