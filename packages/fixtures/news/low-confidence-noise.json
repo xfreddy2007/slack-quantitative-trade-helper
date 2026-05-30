@@ -1,0 +1,12 @@
+{
+  "title": "Anonymous Source Suggests Possible Tech Sector Regulation, Details Unclear",
+  "source_url": "https://fixture.example.com/news/low-confidence-noise-2026-0529",
+  "market": "US",
+  "published_at": "2026-05-29T10:00:00.000Z",
+  "content": "An unverified social media post claims a government official hinted at upcoming tech sector regulation. No official statement has been issued, the original source is anonymous, and no corroborating reports exist from established outlets. Market impact, if any, is unclear. This fixture represents a low-signal, high-noise item that should not trigger alerts under the MVP threshold rules.",
+  "expected_tags": ["noise", "unverified", "regulation"],
+  "expected_severity": 2,
+  "expected_confidence": 1,
+  "author": "fixture",
+  "provider": "fixture"
+}

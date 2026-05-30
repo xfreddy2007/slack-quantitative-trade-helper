@@ -1,0 +1,12 @@
+{
+  "title": "TSMC Raises 2026 Revenue Forecast on AI Chip Demand Surge",
+  "source_url": "https://fixture.example.com/news/tsmc-forecast-source-b",
+  "market": "TW",
+  "published_at": "2026-05-29T03:15:00.000Z",
+  "content": "TSMC has raised its 2026 annual revenue forecast citing surging demand for AI accelerator chips. The company now expects full-year revenue growth of 28-30%, up from the previous 25-27% guidance. Management noted that CoWoS advanced packaging capacity remains the primary bottleneck and will be expanded aggressively through year-end.",
+  "expected_tags": ["tsmc", "ai", "revenue", "semiconductor"],
+  "expected_severity": 3,
+  "expected_confidence": 4,
+  "author": "fixture",
+  "provider": "fixture"
+}

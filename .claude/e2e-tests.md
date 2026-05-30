@@ -264,9 +264,10 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 
 ---
 
-### Group 1 — Fixture Assets
-**Phase**: Phase 2
-**Purpose**: All fixture files load and validate correctly.
+### Group 1 — Fixture Assets via Loader
+**Phase**: Phase 3 (`PHASE3=ACTIVE`)
+**Purpose**: Fixture files load correctly via the TypeScript fixture loader module (`src/providers/fixtures/index.ts`, implemented in T-0303).
+**Note**: Fixture file content validation (Zod schemas) is covered by `tests/fixtures/fixtures.test.ts` (PHASE2, unit tests). This group tests the loader interface.
 
 #### T1.1 — Taiwan ETF portfolio fixture loads
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/providers/fixtures/index.ts').then(m => m.loadPortfolioFixture('tw-etf')).then(p => { console.log(JSON.stringify(p)); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })" 2>&1`

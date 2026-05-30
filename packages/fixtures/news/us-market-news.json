@@ -1,0 +1,12 @@
+{
+  "title": "Fed Signals Potential Rate Cut as Core PCE Cools to 2.4%",
+  "source_url": "https://fixture.example.com/news/us-market-2026-0529",
+  "market": "US",
+  "published_at": "2026-05-29T14:00:00.000Z",
+  "content": "The Federal Reserve indicated it may cut interest rates in September 2026 after core PCE inflation eased to 2.4%, approaching the 2% target. Fed officials noted the labor market remains resilient but price pressures are moderating. Equity markets rallied on the news with the S&P 500 gaining 1.2%. Bond yields declined sharply with the 10-year Treasury falling to 4.15%.",
+  "expected_tags": ["macro", "fed", "rates", "inflation", "us_market"],
+  "expected_severity": 3,
+  "expected_confidence": 4,
+  "author": "fixture",
+  "provider": "fixture"
+}
