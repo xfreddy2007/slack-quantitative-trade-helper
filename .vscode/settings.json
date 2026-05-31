@@ -1,0 +1,10 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/research/quant-python/.venv/bin/python3",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/research/quant-python/src"
+  ],
+  "python.analysis.include": [
+    "research/quant-python/src",
+    "research/quant-python/tests"
+  ]
+}

@@ -358,27 +358,28 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Purpose**: Drift thresholds and rebalancing rules fire correctly.
 
 #### T3.1 — Allocation within threshold produces no-action
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_within_threshold_no_action -v 2>&1`
-- Verify: exit code 0, recommended_action is `do_not_act` or `hold`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_within_threshold_returns_do_not_act -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T3.2 — Allocation exceeds threshold produces rebalance recommendation
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_exceeds_threshold_rebalance -v 2>&1`
-- Verify: exit code 0, recommended_action is `rebalance`, suggested_size_min and suggested_size_max are non-null
+#### T3.2 — Allocation exceeds threshold produces recommendation with size range
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_single_bucket_over_allocated_returns_reduce_position tests/recommendation/test_rebalance.py::test_rebalance_size_range_is_half_to_full_drift_magnitude -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, suggested_size_min and suggested_size_max are non-null
 - Type: happy path
 
-#### T3.3 — Rebalance recommendation includes rationale and confidence
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_rebalance_includes_rationale -v 2>&1`
-- Verify: exit code 0, output contains rationale string and confidence value 1-5
+#### T3.3 — Rebalance recommendation includes human-review rationale and confidence
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_multi_bucket_all_non_do_not_act_include_human_review tests/recommendation/test_rebalance.py::test_rebalance_confidence_bounded_zero_to_one -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
 #### T3.4 — Cash below minimum floor suppresses add_position
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_low_cash_suppresses_add_position -v 2>&1`
-- Verify: exit code 0, recommended_action is NOT `add_position`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_cash_floor_suppresses_add_position tests/recommendation/test_rebalance.py::test_rebalance_cash_floor_rationale_mentions_cash_constraint -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, recommended_action is NOT `add_position`
 - Type: edge case
 
 #### T3.5 — Routine drift and event risk both present produces two separate sections
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_dual_signal_separate_sections -v 2>&1`
+- **Phase**: PHASE4 (requires T2.2.2 event-aware risk adjustment — not yet implemented)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py -v 2>&1`
 - Verify: exit code 0, output distinguishes routine_rebalance from event_adjustment
 - Type: edge case
 
