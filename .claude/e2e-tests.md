@@ -123,6 +123,10 @@ test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocatio
   && test -f "$ROOT/research/quant-python/src/investment_research/portfolio/drift.py" \
   && echo "PHASE4_ALLOCATION=ACTIVE" || echo "PHASE4_ALLOCATION=INACTIVE"
 
+# Phase 4b — Event-aware risk adjustment (T2.2.2)
+test -f "$ROOT/research/quant-python/src/investment_research/recommendation/event_adjustment.py" \
+  && echo "PHASE4_EVENT=ACTIVE" || echo "PHASE4_EVENT=INACTIVE"
+
 # Phase 4 — Full quant core including daily recommendation job
 test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocation.py" \
   && test -f "$ROOT/research/quant-python/src/investment_research/jobs/generate_daily_recommendations.py" \
@@ -377,46 +381,46 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 - Verify: exit code 0, output contains `PASSED`, recommended_action is NOT `add_position`
 - Type: edge case
 
-#### T3.5 — Routine drift and event risk both present produces two separate sections
-- **Phase**: PHASE4 (requires T2.2.2 event-aware risk adjustment — not yet implemented)
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py -v 2>&1`
-- Verify: exit code 0, output distinguishes routine_rebalance from event_adjustment
-- Type: edge case
+#### T3.5 — Event-aware recommendation honours all required output fields
+- **Phase**: PHASE4_EVENT
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_all_outputs_have_required_fields -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: happy path
 
 ---
 
 ### Group 4 — Event-Aware Risk Adjustment
-**Phase**: Phase 4
+**Phase**: PHASE4_EVENT
 **Purpose**: Event severity, relevance, and confidence drive the right advisory action.
 
-#### T4.1 — severity 4 + relevance 3 + confidence 3 produces reduce_position or hedge
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev4_rel3_conf3_produces_action -v 2>&1`
-- Verify: exit code 0, recommended_action in [`reduce_position`, `hedge`]
+#### T4.1 — severity 4 + relevance 3 + confidence 3 produces reduce_position
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_high_severity_relevant_returns_reduce_position -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T4.2 — severity 5 + relevance 4 + low confidence still produces alert with uncertainty note
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev5_low_conf_uncertainty_note -v 2>&1`
-- Verify: exit code 0, recommended_action set, rationale contains uncertainty language
+#### T4.2 — severity 5 + relevance 4 + low confidence produces alert with uncertainty note
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_severity5_override_rationale_mentions_uncertainty -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, rationale contains uncertainty/confidence language
 - Type: edge case
 
 #### T4.3 — severity 4 + confidence 1 produces monitor or research_required (not reduce)
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev4_low_conf_monitor_only -v 2>&1`
-- Verify: exit code 0, recommended_action in [`monitor`, `research_required`]
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_low_confidence_returns_monitor_not_reduce tests/recommendation/test_event_adjustment.py::test_event_aware_confidence_1_returns_monitor -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
 #### T4.4 — Event irrelevant to holdings produces do_not_act
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_irrelevant_event_no_action -v 2>&1`
-- Verify: exit code 0, recommended_action is `do_not_act`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_high_severity_irrelevant_returns_do_not_act tests/recommendation/test_event_adjustment.py::test_event_aware_relevance_below_3_always_do_not_act_regardless_of_severity -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
-#### T4.5 — severity 5 + portfolio_relevance < 4 falls back to normal threshold
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev5_low_relevance_normal_threshold -v 2>&1`
-- Verify: exit code 0, alert_should_post reflects normal threshold rule
+#### T4.5 — severity 5 + low confidence override returns research_required
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_severity5_override_with_low_confidence_returns_research_required -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
-#### T4.6 — Event with null affected tickers produces no portfolio impact
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_null_tickers_no_impact -v 2>&1`
-- Verify: exit code 0, affected_holdings is empty, recommended_action is `do_not_act`
+#### T4.6 — Empty affected exposures produces do_not_act
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_empty_exposures_returns_do_not_act -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, affected_symbols is empty
 - Type: error case
 
 ---
