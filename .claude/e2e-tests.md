@@ -425,24 +425,34 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 
 ---
 
-### Group 5 — Paper Recommendation Writer
+### Group 5 — Paper Recommendation Writer and Daily Job
 **Phase**: Phase 4
-**Purpose**: Paper recommendations are persisted correctly and retrievable.
+**Purpose**: Paper recommendations are persisted correctly; daily job is idempotent and exits cleanly.
 
-#### T5.1 — Rebalancing recommendation writes full paper_recommendation row
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_rebalance_writes_full_row -v 2>&1`
-- Verify: exit code 0, row contains symbol, market, action, suggested_size_min, suggested_size_max, rationale, confidence, portfolio_snapshot_id, created_at
+#### T5.1 — Write + read back paper_recommendation row with all required fields
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_write_and_read_back -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T5.2 — Written paper recommendation is readable by ID
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_paper_recommendation_readable_by_id -v 2>&1`
-- Verify: exit code 0, retrieved row matches written row by id
+#### T5.2 — evaluation_status defaults to pending
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_evaluation_status_defaults_to_pending -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T5.3 — Paper recommendation never sends broker order
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_no_broker_order_sent -v 2>&1`
-- Verify: exit code 0, no `execution` or `broker_order` records created
-- Type: happy path (negative assertion)
+#### T5.3 — Daily recommendation idempotent for same calendar date
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_daily_recommendation_idempotent_same_date -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: edge case
+
+#### T5.4 — Missing DATABASE_URL exits with clear error message (not traceback)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_missing_database_url_exits_with_message -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: error case
+
+#### T5.5 — CLI job exits zero and prints created IDs for mixed fixture
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && DATABASE_URL=$(grep '^DATABASE_URL' /Users/xfreddy2007/Documents/Self-projects/investment-helper/.env | cut -d= -f2-) uv run python -m investment_research.jobs.generate_daily_recommendations --fixture /Users/xfreddy2007/Documents/Self-projects/investment-helper/packages/fixtures/portfolios/mixed.yaml 2>&1`
+- Verify: exit code 0, output contains `Created daily_recommendation:` or `Daily recommendation already exists`
+- Type: happy path
 
 ---
 
