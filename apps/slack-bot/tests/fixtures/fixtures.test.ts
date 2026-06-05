@@ -1,4 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import {
+  loadPortfolioFixtures,
+  loadPriceFixtures,
+  loadNewsFixtures,
+} from '../../src/fixtures/loader.js'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -180,5 +185,27 @@ describe('Provider payload fixtures', () => {
     )
     expect(p.result['stock_symbol']).toBeTruthy()
     expect(p.result['company_name']).toBeTruthy()
+  })
+})
+
+// ─── Fixture loader ────────────────────────────────────────────────────────────
+
+describe('Fixture loader', () => {
+  it('loads all portfolio fixtures without error', () => {
+    const portfolios = loadPortfolioFixtures()
+    expect(portfolios.length).toBeGreaterThanOrEqual(3)
+    expect(portfolios.every((p) => Array.isArray(p.holdings))).toBe(true)
+  })
+
+  it('loads all price fixtures without error', () => {
+    const prices = loadPriceFixtures()
+    expect(prices.length).toBeGreaterThanOrEqual(4)
+    expect(prices.every((p) => typeof p.price === 'number' && p.price > 0)).toBe(true)
+  })
+
+  it('loads all news fixtures without error', () => {
+    const news = loadNewsFixtures()
+    expect(news.length).toBeGreaterThanOrEqual(4)
+    expect(news.every((n) => typeof n.title === 'string' && n.title.length > 0)).toBe(true)
   })
 })
