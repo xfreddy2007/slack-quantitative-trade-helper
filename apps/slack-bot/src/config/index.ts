@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { fileURLToPath, pathToFileURL } from 'url'
 
 const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -30,4 +31,14 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     throw new Error(`Invalid environment configuration: ${details.join('; ')}`)
   }
   return result.data
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  try {
+    loadConfig()
+    console.log('Environment configuration valid')
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
+    process.exit(1)
+  }
 }
