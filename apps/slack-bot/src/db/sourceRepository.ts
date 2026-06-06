@@ -72,6 +72,7 @@ export class SourceRepository {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         const existing = await this.db.source.findUnique({ where: { hash } })
         if (existing) return { sourceId: existing.id, isNew: false }
+        throw new Error(`upsertSource: P2002 conflict but source row not found (hash=${hash})`)
       }
       throw err
     }

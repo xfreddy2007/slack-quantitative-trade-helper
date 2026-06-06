@@ -93,7 +93,7 @@ export function updateIndex(
   }
 
   const existing = readFileSync(indexPath, 'utf-8')
-  if (existing.includes(sourceId)) return // idempotent — already indexed
+  if (existing.includes(`news/${sourceId}.md`)) return // idempotent — already indexed
 
   appendFileSync(indexPath, entry, 'utf-8')
 }
