@@ -1,9 +1,9 @@
 import { readFileSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
 import { NewsFixtureSchema } from '@schemas/zod/news-fixture'
 import type { z } from 'zod'
-import { getPrismaClient, shutdown } from '../db/client.js'
+import { getPrismaClient, shutdown } from '../db/prismaClient.js'
 import { SourceRepository } from '../db/sourceRepository.js'
 import { writeRawSource } from './rawSourceWriter.js'
 import { writeWikiPage, appendToLog, updateIndex } from './wikiWriter.js'
@@ -29,7 +29,7 @@ if (existsSync(DOT_ENV_PATH)) {
   }
 }
 
-async function ingestItem(repo: SourceRepository, item: NewsItem): Promise<void> {
+export async function ingestItem(repo: SourceRepository, item: NewsItem): Promise<void> {
   const market = classifyMarket(item)
 
   const { sourceId, isNew } = await repo.upsertSource({
@@ -122,7 +122,9 @@ async function main(): Promise<void> {
   await shutdown()
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}

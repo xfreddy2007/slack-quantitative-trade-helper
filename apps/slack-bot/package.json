@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "npx prisma migrate dev",
-    "db:seed": "npx tsx src/db/seed.ts"
+    "db:seed": "npx tsx src/db/seed.ts",
+    "pipeline:fixture": "tsx src/orchestration/pipelineFixture.ts"
   },
   "prisma": {
     "schema": "../../db/prisma/schema.prisma"

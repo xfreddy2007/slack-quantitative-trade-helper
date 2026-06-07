@@ -257,7 +257,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 - Type: happy path
 
 #### T0B.5 — Slack daily recommendation renderer includes Traditional Chinese section headings
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/unit/renderers/dailyRecommendation.snapshot.test.ts 2>&1`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/unit/renderers/dailyRecommendation.snapshot.ts 2>&1`
 - Verify: exit code 0, output contains `今日觀察`, `可考慮調整`, `不建議動作`
 - Type: happy path
 
@@ -554,7 +554,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Depends on**: Groups 1-7 pass
 
 #### T8.1 — E2E pipeline exits zero and prints recommendation + paper IDs
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npm run e2e:fixture 2>&1`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npm --prefix apps/slack-bot run pipeline:fixture 2>&1`
 - Verify: exit code 0, output contains `daily_recommendation_id:` and `paper_recommendation_id:` with non-null values
 - Type: happy path
 

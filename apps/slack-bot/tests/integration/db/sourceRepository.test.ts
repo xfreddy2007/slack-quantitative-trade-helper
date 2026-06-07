@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { SourceRepository, computeUrlHash } from '../../../src/db/sourceRepository.js'
-import { getPrismaClient, shutdown } from '../../../src/db/client.js'
+import { getPrismaClient, shutdown } from '../../../src/db/prismaClient.js'
 
 const SKIP_PATTERNS = [
   'ECONNREFUSED',

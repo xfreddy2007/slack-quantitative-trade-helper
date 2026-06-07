@@ -1,5 +1,7 @@
 import type { NormalizedNewsItem } from '../providers/adapter.js'
 
+export const TRIGGER_MODEL_VERSION = 'trigger-scoring-v1'
+
 export type SuggestedAction = 'do_not_act' | 'monitor' | 'research_required' | 'reduce_position'
 
 export interface TriggerScore {
