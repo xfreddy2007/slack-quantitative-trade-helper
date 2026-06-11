@@ -236,12 +236,12 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Purpose**: Env validation, DB client, provider adapter, renderer, and command router are correct in isolation.
 
 #### T0B.1 — Valid env passes Zod validation without error
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/config/index.ts').then(m => { console.log('VALID'); process.exit(0); }).catch(e => { console.error(e.message); process.exit(1); })" 2>&1`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && set -a && source /Users/xfreddy2007/Documents/Self-projects/investment-helper/.env && set +a && npx tsx -e "import('./src/config/index.ts').then(m => { m.loadConfig(); console.log('VALID'); process.exit(0); }).catch(e => { console.error(e.message); process.exit(1); })" 2>&1`
 - Verify: exit code 0, output contains `VALID`
 - Type: happy path
 
 #### T0B.2 — Missing SLACK_BOT_TOKEN throws Zod validation error with field name
-- Command: same as T0B.1 but with `SLACK_BOT_TOKEN=""` prefix
+- Command: same as T0B.1 but with `SLACK_BOT_TOKEN=""` set after sourcing `.env` (overrides the loaded value)
 - Verify: exit code non-zero, output contains `SLACK_BOT_TOKEN` in error message
 - Type: error case
 
@@ -252,8 +252,8 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 - Type: happy path
 
 #### T0B.4 — Fixture provider adapter contract test passes
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/providers/fixtureAdapter.test.ts 2>&1`
-- Verify: exit code 0, normalized source records have required fields (`symbol`, `source`, `timestamp`)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/integration/providers/fixtureAdapter.test.ts 2>&1`
+- Verify: exit code 0, normalized source records have required fields (`symbol`, `provider`, `timestamp`)
 - Type: happy path
 
 #### T0B.5 — Slack daily recommendation renderer includes Traditional Chinese section headings
@@ -300,7 +300,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 
 #### T1.5 — News fixtures load with required fields
 - Command: same pattern for all news fixtures
-- Verify: exit code 0, each record has `title`, `url`, `market`, `published_at`, `content`
+- Verify: exit code 0, each record has `title`, `source_url`, `market`, `published_at`, `content`
 - Type: happy path
 
 #### T1.6 — Malformed fixture returns validation error without crashing
