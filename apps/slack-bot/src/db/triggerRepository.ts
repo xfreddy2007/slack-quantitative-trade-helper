@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, TriggerEvaluation } from '@prisma/client'
 import type { TriggerScore } from '../orchestration/triggerScoring.js'
 
 export interface TriggerVersionMeta {
@@ -52,5 +52,18 @@ export class TriggerRepository {
       },
     })
     return { id: created.id, isNew: true }
+  }
+
+  async findById(id: string): Promise<TriggerEvaluation | null> {
+    return this.db.triggerEvaluation.findUnique({ where: { id } })
+  }
+
+  async findCitations(eventIds: string[]): Promise<string[]> {
+    if (eventIds.length === 0) return []
+    const analyses = await this.db.newsAnalysis.findMany({
+      where: { id: { in: eventIds } },
+      select: { citations: true },
+    })
+    return analyses.flatMap((a) => (Array.isArray(a.citations) ? (a.citations as string[]) : []))
   }
 }

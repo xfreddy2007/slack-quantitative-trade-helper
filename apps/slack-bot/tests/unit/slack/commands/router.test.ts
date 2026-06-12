@@ -1,7 +1,41 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, afterAll, afterEach, vi } from 'vitest'
 import { createInvestmentCommandHandler, USAGE_MESSAGE } from '../../../../src/slack/commands/router.js'
-import { getPrismaClient } from '../../../../src/db/prismaClient.js'
+import { getPrismaClient, shutdown } from '../../../../src/db/prismaClient.js'
 import type { CommandArgs } from '../../../../src/slack/commands/types.js'
+
+const SKIP_PATTERNS = [
+  'ECONNREFUSED',
+  'P1001',
+  'P1013',
+  'DATABASE_URL',
+  "Can't reach database server",
+]
+
+function isDbUnavailable(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return SKIP_PATTERNS.some((p) => msg.includes(p))
+}
+
+const NOT_FOUND_MESSAGE = '找不到此 ID。'
+const TEST_MARKER_TRIGGER = 't412-router-explain-trigger-rationale'
+
+const createdTriggerEvaluationIds: string[] = []
+
+afterEach(async () => {
+  const db = getPrismaClient()
+  try {
+    if (createdTriggerEvaluationIds.length > 0) {
+      await db.triggerEvaluation.deleteMany({ where: { id: { in: createdTriggerEvaluationIds } } })
+      createdTriggerEvaluationIds.length = 0
+    }
+  } catch {
+    // best-effort cleanup
+  }
+})
+
+afterAll(async () => {
+  await shutdown()
+})
 
 describe('commands/router', () => {
   it('unknown subcommand returns usage help without throwing', async () => {
@@ -39,5 +73,94 @@ describe('commands/router', () => {
     expect(ack).toHaveBeenCalledTimes(1)
     const text = (respond.mock.calls[0]?.[0] as { text: string }).text
     expect(text).toContain('Investment Helper Status')
+  })
+
+  it('routes "brief tw" subcommand to the brief market handler', async () => {
+    const db = getPrismaClient()
+    const handler = createInvestmentCommandHandler(db)
+    const ack = vi.fn().mockResolvedValue(undefined)
+    const respond = vi.fn().mockResolvedValue(undefined)
+
+    await handler({ command: { text: 'brief tw' }, ack, respond } as unknown as CommandArgs)
+
+    expect(ack).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledWith({ text: expect.any(String) })
+  })
+
+  it('routes "brief us" subcommand to the brief market handler', async () => {
+    const db = getPrismaClient()
+    const handler = createInvestmentCommandHandler(db)
+    const ack = vi.fn().mockResolvedValue(undefined)
+    const respond = vi.fn().mockResolvedValue(undefined)
+
+    await handler({ command: { text: 'brief us' }, ack, respond } as unknown as CommandArgs)
+
+    expect(ack).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledWith({ text: expect.any(String) })
+  })
+
+  it('routes "paper-log" subcommand to the paper log handler', async () => {
+    const db = getPrismaClient()
+    const handler = createInvestmentCommandHandler(db)
+    const ack = vi.fn().mockResolvedValue(undefined)
+    const respond = vi.fn().mockResolvedValue(undefined)
+
+    await handler({ command: { text: 'paper-log' }, ack, respond } as unknown as CommandArgs)
+
+    expect(ack).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledWith({ text: expect.any(String) })
+  })
+
+  it('routes "explain <id>" with a garbage id to the explain handler and returns not-found', async () => {
+    const db = getPrismaClient()
+    const handler = createInvestmentCommandHandler(db)
+    const ack = vi.fn().mockResolvedValue(undefined)
+    const respond = vi.fn().mockResolvedValue(undefined)
+
+    await handler({ command: { text: 'explain this-id-does-not-exist-garbage-123' }, ack, respond } as unknown as CommandArgs)
+
+    expect(ack).toHaveBeenCalledTimes(1)
+    expect(respond).toHaveBeenCalledWith({ text: NOT_FOUND_MESSAGE })
+  })
+
+  it('routes mixed-case "Explain <id>" and preserves the id casing when looking up a real TriggerEvaluation', async () => {
+    const db = getPrismaClient()
+
+    try {
+      const trigger = await db.triggerEvaluation.create({
+        data: {
+          eventIds: [],
+          portfolioSymbols: [],
+          severity: 2,
+          confidence: 3,
+          relevance: 3,
+          suggestedAction: 'hold',
+          rationale: TEST_MARKER_TRIGGER,
+        },
+      })
+      createdTriggerEvaluationIds.push(trigger.id)
+
+      const handler = createInvestmentCommandHandler(db)
+      const ack = vi.fn().mockResolvedValue(undefined)
+      const respond = vi.fn().mockResolvedValue(undefined)
+
+      await handler({ command: { text: `Explain ${trigger.id}` }, ack, respond } as unknown as CommandArgs)
+
+      expect(ack).toHaveBeenCalledTimes(1)
+      const text = (respond.mock.calls[0]?.[0] as { text: string }).text
+      expect(text).toContain(TEST_MARKER_TRIGGER)
+    } catch (err: unknown) {
+      if (isDbUnavailable(err)) {
+        console.warn(
+          'Skipping DB integration — PostgreSQL not reachable:',
+          (err instanceof Error ? err.message : String(err)).split('\n')[0]
+        )
+        return
+      }
+      throw err
+    }
   })
 })
