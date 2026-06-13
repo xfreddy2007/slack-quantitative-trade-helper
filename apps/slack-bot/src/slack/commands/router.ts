@@ -6,6 +6,8 @@ import { buildBriefTodayMessage } from './briefToday.js'
 import { buildBriefMarketMessage } from './briefMarket.js'
 import { buildPaperLogMessage } from './paperLog.js'
 import { buildExplainMessage } from './explain.js'
+import { buildMuteMessage } from './mute.js'
+import { buildFeedbackMessage } from './feedback.js'
 import type { CommandArgs } from './types.js'
 
 export const USAGE_MESSAGE = [
@@ -19,6 +21,8 @@ export const USAGE_MESSAGE = [
   '- brief us',
   '- paper-log',
   '- explain <id>',
+  '- mute <ticker|topic>',
+  '- feedback <id> <useful|not_useful|too_noisy|too_late>',
 ].join('\n')
 
 export function createInvestmentCommandHandler(db: PrismaClient) {
@@ -32,6 +36,12 @@ export function createInvestmentCommandHandler(db: PrismaClient) {
     if (subcommand.startsWith('explain ')) {
       const id = rawText.slice('explain '.length).trim()
       text = await buildExplainMessage(db, id)
+    } else if (subcommand.startsWith('mute ')) {
+      const target = rawText.slice('mute '.length).trim()
+      text = await buildMuteMessage(db, target)
+    } else if (subcommand.startsWith('feedback ')) {
+      const args = rawText.slice('feedback '.length).trim()
+      text = await buildFeedbackMessage(db, args)
     } else {
       switch (subcommand) {
         case 'status':

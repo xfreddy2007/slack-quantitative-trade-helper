@@ -275,3 +275,14 @@ model FeedbackEvent {
 
   @@map("feedback_events")
 }
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String   // mute
+  target    String   // ticker or topic
+  createdAt DateTime @default(now())
+
+  @@unique([type, target])
+  @@map("user_preferences")
+}

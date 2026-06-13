@@ -18,6 +18,7 @@ function isDbUnavailable(err: unknown): boolean {
 
 const NOT_FOUND_MESSAGE = '找不到此 ID。'
 const TEST_MARKER_TRIGGER = 't412-router-explain-trigger-rationale'
+const TEST_MUTE_TARGETS = ['AAPL', 'aapl']
 
 const createdTriggerEvaluationIds: string[] = []
 
@@ -28,6 +29,7 @@ afterEach(async () => {
       await db.triggerEvaluation.deleteMany({ where: { id: { in: createdTriggerEvaluationIds } } })
       createdTriggerEvaluationIds.length = 0
     }
+    await db.userPreference.deleteMany({ where: { target: { in: TEST_MUTE_TARGETS } } })
   } catch {
     // best-effort cleanup
   }
@@ -152,6 +154,98 @@ describe('commands/router', () => {
       expect(ack).toHaveBeenCalledTimes(1)
       const text = (respond.mock.calls[0]?.[0] as { text: string }).text
       expect(text).toContain(TEST_MARKER_TRIGGER)
+    } catch (err: unknown) {
+      if (isDbUnavailable(err)) {
+        console.warn(
+          'Skipping DB integration — PostgreSQL not reachable:',
+          (err instanceof Error ? err.message : String(err)).split('\n')[0]
+        )
+        return
+      }
+      throw err
+    }
+  })
+
+  it('USAGE_MESSAGE includes the mute and feedback subcommand lines', () => {
+    expect(USAGE_MESSAGE).toContain('mute <ticker|topic>')
+    expect(USAGE_MESSAGE).toContain('feedback <id> <useful|not_useful|too_noisy|too_late>')
+  })
+
+  it('routes "mute AAPL" subcommand to the mute handler and persists the target', async () => {
+    const db = getPrismaClient()
+
+    try {
+      const handler = createInvestmentCommandHandler(db)
+      const ack = vi.fn().mockResolvedValue(undefined)
+      const respond = vi.fn().mockResolvedValue(undefined)
+
+      await handler({ command: { text: 'mute AAPL' }, ack, respond } as unknown as CommandArgs)
+
+      expect(ack).toHaveBeenCalledTimes(1)
+      const text = (respond.mock.calls[0]?.[0] as { text: string }).text
+      expect(text).toContain('AAPL')
+      expect(text).toContain('已將「AAPL」加入靜音清單，相關警示將不再發送。')
+
+      const row = await db.userPreference.findUnique({
+        where: { type_target: { type: 'mute', target: 'AAPL' } },
+      })
+      expect(row).not.toBeNull()
+    } catch (err: unknown) {
+      if (isDbUnavailable(err)) {
+        console.warn(
+          'Skipping DB integration — PostgreSQL not reachable:',
+          (err instanceof Error ? err.message : String(err)).split('\n')[0]
+        )
+        return
+      }
+      throw err
+    }
+  })
+
+  it('routes "mute aapl" subcommand preserving the lowercase target case', async () => {
+    const db = getPrismaClient()
+
+    try {
+      const handler = createInvestmentCommandHandler(db)
+      const ack = vi.fn().mockResolvedValue(undefined)
+      const respond = vi.fn().mockResolvedValue(undefined)
+
+      await handler({ command: { text: 'mute aapl' }, ack, respond } as unknown as CommandArgs)
+
+      expect(ack).toHaveBeenCalledTimes(1)
+      const text = (respond.mock.calls[0]?.[0] as { text: string }).text
+      expect(text).toContain('aapl')
+
+      const row = await db.userPreference.findUnique({
+        where: { type_target: { type: 'mute', target: 'aapl' } },
+      })
+      expect(row).not.toBeNull()
+      expect(row?.target).toBe('aapl')
+    } catch (err: unknown) {
+      if (isDbUnavailable(err)) {
+        console.warn(
+          'Skipping DB integration — PostgreSQL not reachable:',
+          (err instanceof Error ? err.message : String(err)).split('\n')[0]
+        )
+        return
+      }
+      throw err
+    }
+  })
+
+  it('routes "feedback <id> useful" subcommand to the feedback handler', async () => {
+    const db = getPrismaClient()
+
+    try {
+      const handler = createInvestmentCommandHandler(db)
+      const ack = vi.fn().mockResolvedValue(undefined)
+      const respond = vi.fn().mockResolvedValue(undefined)
+
+      await handler({ command: { text: 'feedback router-feedback-bogus useful' }, ack, respond } as unknown as CommandArgs)
+
+      expect(ack).toHaveBeenCalledTimes(1)
+      const text = (respond.mock.calls[0]?.[0] as { text: string }).text
+      expect(text).toBe(NOT_FOUND_MESSAGE)
     } catch (err: unknown) {
       if (isDbUnavailable(err)) {
         console.warn(

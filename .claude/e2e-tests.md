@@ -589,87 +589,74 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Purpose**: All slash command handlers produce correct output with real DB and mock Bolt context.
 **Depends on**: Group 8 pipeline has run (recommendations exist in DB)
 
+Each test case below runs the corresponding vitest file against the real DB
+(seeded by Group 8). Command pattern:
+`cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && set -a && source ../../.env && set +a && npx vitest run <file> 2>&1`
+Verify pattern: exit code 0, output contains `passed` and no `failed`.
+
 #### T9.1 — /investment status returns connectivity and last recommendation timestamp
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/commands/status.test.ts 2>&1`
-- Verify: exit code 0, output contains DB status OK and ISO timestamp of last recommendation
+- File: `tests/unit/slack/commands/status.test.ts`
 - Type: happy path
 
 #### T9.2 — /investment portfolio shows TW and US allocation buckets
-- Command: integration test for portfolio command
-- Verify: output contains bucket names and allocation percentages for both TW and US
+- File: `tests/unit/slack/commands/portfolio.test.ts`
 - Type: happy path
 
 #### T9.3 — /investment recommendation today renders 3-part structure
-- Command: integration test for recommendation today command
-- Verify: output contains `今日觀察`, `可考慮調整`, `不建議動作`, and paper-only disclaimer
+- File: `tests/unit/slack/commands/recommendationToday.test.ts`
+- Verify (additional): output contains `今日觀察`, `可考慮調整`, `不建議動作`, and paper-only disclaimer
 - Type: happy path
 
 #### T9.4 — /investment brief today renders combined brief or friendly no-brief state
-- Command: integration test for brief today command
-- Verify: output contains brief content OR friendly message (not an error stack)
+- File: `tests/unit/slack/commands/briefToday.test.ts`
 - Type: happy path + edge case (no brief available)
 
 #### T9.5 — /investment brief tw renders Taiwan pre-market brief
-- Verify: output contains TW-specific content
-- Type: happy path
-
 #### T9.6 — /investment brief us renders US pre-market brief
-- Verify: output contains US-specific content
+- File: `tests/unit/slack/commands/briefMarket.test.ts` (covers both TW and US)
 - Type: happy path
 
 #### T9.7 — /investment paper-log lists recent paper recommendations with IDs
-- Verify: output contains at least one row with id, action, symbol, status
+- File: `tests/unit/slack/commands/paperLog.test.ts`
 - Type: happy path
 
 #### T9.8 — /investment explain <valid-id> returns rationale and citations
-- Command: use a seeded paper recommendation ID
-- Verify: output contains rationale text and at least one source citation
-- Type: happy path
-
 #### T9.9 — /investment explain <invalid-id> returns friendly not-found
-- Command: use a non-existent ID
-- Verify: output contains not-found message, no error stack
-- Type: error case
+- File: `tests/unit/slack/commands/explain.test.ts` (covers both valid and invalid IDs)
+- Type: happy path + error case
 
-#### T9.10 — /investment mute VOO records preference; VOO alerts suppressed
-- Command: run mute command, then generate a VOO alert
-- Verify: mute preference written to DB, subsequent VOO alert filtered from output
+#### T9.10 — /investment mute AAPL records preference; AAPL alerts suppressed
+- File: `tests/unit/slack/commands/mute.test.ts` and `tests/unit/orchestration/alertMute.test.ts`
 - Type: happy path + integration
 
 #### T9.11 — /investment feedback <id> useful writes feedback_event row
-- Verify: DB `feedback_events` has row with alert_id and feedback=`useful`
-- Type: happy path
-
 #### T9.12 — /investment feedback <id> with all feedback types writes correct rows
-- Command: test `not_useful`, `too_noisy`, `too_late` in sequence
-- Verify: 3 feedback_event rows with correct feedback values
+- File: `tests/unit/slack/commands/feedback.test.ts` (covers `useful`, `not_useful`, `too_noisy`, `too_late` via `it.each`)
 - Type: happy path
 
 #### T9.13 — Unknown subcommand /investment foo returns friendly error
-- Command: integration test with unknown subcommand
-- Verify: output contains usage help or friendly error, no error stack
+- File: `tests/unit/slack/commands/router.test.ts`
 - Type: error case
 
 ---
 
-### Group 10 — Slack Signature Validation
-**Phase**: Phase 7
-**Purpose**: Inbound Slack event signatures are validated correctly.
+### Group 10 — Slack Signature / Connection Validation
+**Phase**: Phase 7 (HTTP receiver)
+**Purpose**: Inbound Slack requests are validated correctly.
+**Note**: The MVP entrypoint (`src/index.ts`, T4.2.1) runs Bolt in **Socket Mode**
+(`socketMode: true`), authenticated via `SLACK_APP_TOKEN` over a WebSocket — there
+is no inbound HTTP request to sign-check, so HTTP signing-secret validation
+(T10.1-T10.3 as originally written) does not apply to this architecture.
 
-#### T10.1 — Valid signing secret allows request to proceed
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/slack/signatureValidation.test.ts --case valid 2>&1`
-- Verify: exit code 0, request is accepted (HTTP 200 or handler called)
+#### T10.1 — Dry-run startup test with mocked env exits without connecting to real Slack API
+- File: `tests/unit/index.test.ts`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/index.test.ts 2>&1`
+- Verify: exit code 0, output contains `passed`, `@slack/bolt` is mocked (no real Slack connection)
 - Type: happy path
 
-#### T10.2 — Invalid signing secret rejects request
-- Command: same test with tampered signature
-- Verify: request is rejected (HTTP 403 or handler NOT called)
-- Type: error case
-
-#### T10.3 — Replayed request (timestamp > 5 minutes old) is rejected
-- Command: same test with old timestamp
-- Verify: request rejected
-- Type: edge case
+If an HTTP Events API receiver is added in a future task, restore HTTP
+signing-secret/replay tests (valid signature accepted, tampered signature
+rejected, timestamp >5min old rejected) as T10.2/T10.3 at that point.
 
 ---
 

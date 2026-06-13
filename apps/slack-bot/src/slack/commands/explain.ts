@@ -4,7 +4,7 @@ import { TriggerRepository } from '../../db/triggerRepository.js'
 import { renderExplain } from '../../renderers/explain.js'
 import type { CommandArgs } from './types.js'
 
-const NOT_FOUND_MESSAGE = '找不到此 ID。'
+export const NOT_FOUND_MESSAGE = '找不到此 ID。'
 
 async function findCitationsForTrigger(triggerRepo: TriggerRepository, triggerId: string): Promise<string[]> {
   const trigger = await triggerRepo.findById(triggerId)
