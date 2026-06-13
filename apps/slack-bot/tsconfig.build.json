@@ -3,8 +3,19 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "paths": {}
+    "paths": {
+      "@schemas/zod": ["./src/types/schemas-zod-stub.ts"]
+    }
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "src/providers",
+    "src/fixtures",
+    "src/orchestration/marketClassifier.ts",
+    "src/orchestration/ingestFixtureSources.ts",
+    "src/orchestration/pipelineFixture.ts"
+  ]
 }

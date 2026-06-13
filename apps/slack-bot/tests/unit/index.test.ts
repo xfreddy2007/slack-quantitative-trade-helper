@@ -11,6 +11,7 @@ const AppMock = vi.fn().mockImplementation(() => ({
 
 vi.mock('@slack/bolt', () => ({
   App: AppMock,
+  default: { App: AppMock },
 }))
 
 beforeEach(() => {
@@ -49,5 +50,25 @@ describe('src/index', () => {
     expect(commandMock).toHaveBeenCalledWith('/investment', expect.any(Function))
     expect(startMock).toHaveBeenCalledTimes(1)
     expect(app).toBe(AppMock.mock.results[0]?.value)
+  })
+
+  it('main() with --dry-run skips token verification and does not start the app', async () => {
+    const { main } = await import('../../src/index.js')
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    process.argv.push('--dry-run')
+    try {
+      const app = await main()
+
+      expect(AppMock).toHaveBeenCalledWith(
+        expect.objectContaining({ tokenVerificationEnabled: false })
+      )
+      expect(startMock).not.toHaveBeenCalled()
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('dry run'))
+      expect(app).toBe(AppMock.mock.results[0]?.value)
+    } finally {
+      process.argv.pop()
+      logSpy.mockRestore()
+    }
   })
 })
