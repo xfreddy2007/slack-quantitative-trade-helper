@@ -2,6 +2,10 @@
 
 Usage:
     python -m investment_research.jobs.generate_daily_recommendations --fixture <path>
+    python -m investment_research.jobs.generate_daily_recommendations --dry-run
+
+--dry-run validates that DATABASE_URL is set and exits zero without reading a fixture
+or connecting to the database.
 
 Reads a YAML fixture containing portfolio holdings, allocation targets, price snapshots,
 and optional exchange rates. Calls the routine rebalancing and event-aware recommendation
@@ -69,12 +73,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description='Generate daily recommendations from a portfolio fixture'
     )
-    parser.add_argument('--fixture', required=True, help='Path to portfolio YAML fixture')
+    parser.add_argument('--fixture', help='Path to portfolio YAML fixture (required unless --dry-run)')
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Validate startup configuration and exit without running the job',
+    )
     args = parser.parse_args()
 
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
         sys.exit('Error: DATABASE_URL environment variable is not set.')
+
+    if args.dry_run:
+        print('Investment research job startup check passed (dry run)')
+        return
+
+    if not args.fixture:
+        parser.error('--fixture is required unless --dry-run is set')
 
     fixture = _load_fixture(args.fixture)
 

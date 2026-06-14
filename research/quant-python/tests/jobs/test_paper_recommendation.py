@@ -164,6 +164,52 @@ def test_paper_recommendation_missing_database_url_exits_with_message():
     assert 'Error:' in combined
 
 
+# ─── --dry-run: startup check for containerized deployment (T5.1.2) ──────────
+
+
+def test_dry_run_with_database_url_exits_zero():
+    """--dry-run prints a startup check message and exits zero when DATABASE_URL is set."""
+    env = {**os.environ, 'DATABASE_URL': 'postgresql://test:test@localhost/test'}
+    result = subprocess.run(
+        [
+            sys.executable,
+            '-m',
+            'investment_research.jobs.generate_daily_recommendations',
+            '--dry-run',
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(Path(__file__).parents[2]),
+    )
+
+    assert result.returncode == 0
+    assert 'dry run' in result.stdout.lower()
+
+
+def test_dry_run_without_database_url_exits_with_message():
+    """--dry-run still fails fast with a clear error when DATABASE_URL is absent."""
+    env = {k: v for k, v in os.environ.items() if k != 'DATABASE_URL'}
+    result = subprocess.run(
+        [
+            sys.executable,
+            '-m',
+            'investment_research.jobs.generate_daily_recommendations',
+            '--dry-run',
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(Path(__file__).parents[2]),
+    )
+
+    assert result.returncode != 0
+    combined = result.stdout + result.stderr
+    assert 'DATABASE_URL' in combined
+    assert 'Traceback' not in combined
+    assert 'Error:' in combined
+
+
 # ─── optional: suggested size fields are populated ───────────────────────────
 
 
