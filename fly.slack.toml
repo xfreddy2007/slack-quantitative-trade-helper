@@ -1,0 +1,31 @@
+# Fly.io app configuration for the Slack bot worker (apps/slack-bot).
+#
+# Build context: repository root. Run from the repo root:
+#   fly deploy --config fly.slack.toml
+#
+# This is a Slack Socket Mode worker: it makes outbound connections to Slack
+# and does not expose an HTTP port, so no [http_service] block is defined.
+#
+# Required secrets (set via `fly secrets set`, see docs/runbooks/fly-deployment.md):
+#   DATABASE_URL, DIRECT_DATABASE_URL, SLACK_BOT_TOKEN, SLACK_APP_TOKEN,
+#   SLACK_SIGNING_SECRET, SLACK_CHANNEL_ID, plus the LLM/provider API keys
+#   listed in .env.example.
+
+app = "investment-helper-slack"
+primary_region = "hkg"
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "apps/slack-bot/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  APP_ENV = "production"
+  TZ = "Asia/Taipei"
+  USER_LANGUAGE = "zh-TW"
+  LLM_PROVIDER = "anthropic"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
