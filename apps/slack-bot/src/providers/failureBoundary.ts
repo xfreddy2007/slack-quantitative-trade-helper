@@ -25,7 +25,19 @@ export interface ProviderRunRecorder {
   ): Promise<void>
 }
 
-export type IsolatedStatus = 'success' | 'rate_limit' | 'auth_failed' | 'all_failed' | 'failed'
+export type IsolatedStatus =
+  | 'success'
+  | 'rate_limit'
+  | 'auth_failed'
+  | 'all_failed'
+  | 'timeout'
+  | 'failed'
+
+/** A network/request timeout: fetch AbortError/TimeoutError, or a timeout-shaped message. */
+function isTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  return err.name === 'TimeoutError' || err.name === 'AbortError' || /tim(e|ed)\s*out|etimedout/i.test(err.message)
+}
 
 export interface IsolatedResult<T> {
   status: IsolatedStatus
@@ -53,8 +65,8 @@ export async function runIsolated<T>(
   } catch (err) {
     // Classify into the `provider_runs.status` vocabulary:
     // rate limit → 'rate_limit'; token expiry/invalid → 'auth_failed';
-    // every provider in a chain exhausted → 'all_failed';
-    // any other failure (network/API/timeout) → 'failed'.
+    // every provider in a chain exhausted → 'all_failed'; request timeout → 'timeout';
+    // any other failure (network/API) → 'failed'.
     const status: IsolatedStatus =
       err instanceof RateLimitExceeded
         ? 'rate_limit'
@@ -62,7 +74,9 @@ export async function runIsolated<T>(
           ? 'auth_failed'
           : err instanceof AllProvidersFailedError
             ? 'all_failed'
-            : 'failed'
+            : isTimeoutError(err)
+              ? 'timeout'
+              : 'failed'
     const errorMessage = err instanceof Error ? err.message : String(err)
     await recorder.completeProviderRun(runId, { status, errorMessage })
     return { status, data: fallback, runId }

@@ -664,8 +664,9 @@ rejected, timestamp >5min old rejected) as T10.2/T10.3 at that point.
 **Phase**: Phase 9
 **Purpose**: Provider failures are logged and isolated; Slack commands continue working.
 **Note**: T11.1–T11.1b cover T6.1.1 (Alpha Vantage adapter + rate limit guard).
-T11.2–T11.4 cover T6.2.1 (provider failure isolation via `provider_runs`) and require
-that task's logging layer; until T6.2.1 lands they are dependency-blocked, not regressions.
+T11.2–T11.4 cover T6.2.1 (provider failure isolation via the `runIsolated` boundary, which
+records `provider_runs.status`). T6.2.1 has landed, so these run against the boundary's unit
+tests with mocked provider errors (deterministic, no live API).
 
 #### T11.1 — Alpha Vantage adapter parses mock fixture payload into normalized news records
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/alphaVantage.test.ts 2>&1`
@@ -677,20 +678,24 @@ that task's logging layer; until T6.2.1 lands they are dependency-blocked, not r
 - Verify: exit code 0; 26th call within one UTC day throws `RateLimitExceeded` and logs a warning; counter resets when the injected clock crosses UTC midnight; count persists across instances sharing a state path
 - Type: happy path + edge case
 
-#### T11.2 — Alpha Vantage rate limit reached logs rate_limit in provider_runs
-- **Depends on**: T6.2.1 (provider_runs failure-isolation logging — not yet implemented)
-- Command: simulate rate limit response (429 or quota exceeded message)
-- Verify: `provider_runs` DB row has status=`rate_limit` or `quota_exceeded`; no uncaught exception
+#### T11.2 — Rate limit reached records status `rate_limit` in provider_runs
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts -t "rate_limit" 2>&1`
+- Verify: exit code 0; a `RateLimitExceeded` inside `runIsolated` records `provider_run.status = rate_limit` and returns a fallback (no uncaught exception)
 - Type: edge case
 
-#### T11.3 — Alpha Vantage 500 error logs failure without breaking Slack commands
-- Command: simulate provider 500 response, then call `/investment status`
-- Verify: provider_runs has status=`failed`; status command still responds successfully
+#### T11.3 — Provider 500/network error records `failed` without breaking commands
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts 2>&1`
+- Verify: exit code 0; a network/API error records `provider_run.status = failed`, is not propagated, and a subsequent command path still runs (boundary swallows the error)
 - Type: error case
 
-#### T11.4 — Network timeout logs timeout without breaking Slack commands
-- Command: simulate network timeout (zero-byte response after delay)
-- Verify: provider_runs has status=`timeout`; Slack command still responds
+#### T11.4 — Network timeout records status `timeout` without breaking commands
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts -t "timeout" 2>&1`
+- Verify: exit code 0; a TimeoutError/AbortError (or timeout-shaped message) records `provider_run.status = timeout` and returns a fallback; the bot keeps responding
+- Type: error case
+
+#### T11.5 — FinMind 401 records `auth_failed`; provider chain exhaustion records `all_failed`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/finmind.test.ts tests/providers/taiwanProviderChain.test.ts 2>&1`
+- Verify: exit code 0; HTTP 401 → `auth_failed` (T7.1.1); all Taiwan price providers failing → `all_failed` (T7.2.1)
 - Type: error case
 
 ---

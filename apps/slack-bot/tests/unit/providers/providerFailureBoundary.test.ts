@@ -65,6 +65,18 @@ describe('providerFailure isolation boundary', () => {
     expect(rec.completes[0].opts.errorMessage).toContain('rate limit')
   })
 
+  it('catches a network timeout and records status "timeout"', async () => {
+    const rec = fakeRecorder()
+    const timeoutErr = new Error('request timed out')
+    timeoutErr.name = 'TimeoutError'
+    const res = await runIsolated(rec, 'alpha-vantage', [] as number[], async () => {
+      throw timeoutErr
+    })
+
+    expect(res.status).toBe('timeout')
+    expect(rec.completes[0].opts.status).toBe('timeout')
+  })
+
   it('does not propagate provider errors, so a subsequent command path still runs', async () => {
     const rec = fakeRecorder()
     await expect(
