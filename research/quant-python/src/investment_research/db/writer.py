@@ -132,10 +132,12 @@ def write_paper_recommendation(
     source_id: Optional[str] = None,
     suggested_size_min_pct: Optional[Decimal] = None,
     suggested_size_max_pct: Optional[Decimal] = None,
+    eval_horizon_class: Optional[str] = None,
 ) -> str:
     """Insert a paper_recommendations row and return its id.
 
     evaluation_status defaults to 'pending' (DB default, not set here).
+    eval_horizon_class ('acute' | 'allocation') selects evaluation horizons (T4).
     """
     row_id = _new_id()
     with conn.cursor() as cur:
@@ -144,8 +146,9 @@ def write_paper_recommendation(
             INSERT INTO paper_recommendations (
                 "id", "sourceType", "sourceId", "symbol", "market", "action",
                 "suggestedSizeMinPct", "suggestedSizeMaxPct",
-                "rationale", "confidence", "portfolioSnapshotId", "createdAt"
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                "rationale", "confidence", "portfolioSnapshotId",
+                "evalHorizonClass", "createdAt"
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """,
             (
                 row_id,
@@ -159,6 +162,7 @@ def write_paper_recommendation(
                 rationale,
                 confidence,
                 portfolio_snapshot_id,
+                eval_horizon_class,
             ),
         )
     return row_id

@@ -40,18 +40,21 @@ from investment_research.evaluation import (
 
 
 def _fetch_pending_recommendations(conn) -> list[dict]:
-    """Return pending paper_recommendations as dicts (id, symbol, createdAt)."""
+    """Return pending paper_recommendations as dicts (id, symbol, createdAt, eval_horizon_class)."""
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT "id", "symbol", "createdAt"
+            SELECT "id", "symbol", "createdAt", "evalHorizonClass"
             FROM paper_recommendations
             WHERE "evaluationStatus" = 'pending'
             ORDER BY "createdAt"
             """
         )
         rows = cur.fetchall()
-    return [{'id': r[0], 'symbol': r[1], 'created_at': r[2]} for r in rows]
+    return [
+        {'id': r[0], 'symbol': r[1], 'created_at': r[2], 'eval_horizon_class': r[3]}
+        for r in rows
+    ]
 
 
 def _fetch_price_path(conn, symbol: str, since) -> list[Decimal]:
@@ -147,12 +150,14 @@ def main() -> None:
         return
 
     settings = load_settings()
-    horizons = settings.default_evaluation_horizons_days
 
     created_ids: list[str] = []
     with psycopg2.connect(database_url) as conn:
         pending = _fetch_pending_recommendations(conn)
         for rec in pending:
+            # T4: pick horizons by the recommendation's evalHorizonClass
+            # (acute shocks -> short windows; allocation -> long windows).
+            horizons = settings.horizons_for_class(rec.get('eval_horizon_class'))
             created_ids.extend(evaluate_recommendation(conn, rec, horizons))
         conn.commit()
 

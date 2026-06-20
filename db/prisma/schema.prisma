@@ -214,6 +214,7 @@ model PaperRecommendation {
   rationale           String
   confidence          Int
   portfolioSnapshotId String
+  evalHorizonClass    String?  // acute | allocation — picks evaluation horizons (T4)
   evaluationStatus    String   @default("pending") // pending | evaluated
   outcomeNotes        String?
   createdAt           DateTime @default(now())
