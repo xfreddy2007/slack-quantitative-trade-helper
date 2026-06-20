@@ -1,0 +1,20 @@
+{
+  "msg": "success",
+  "status": 200,
+  "data": [
+    {
+      "date": "2026-05-29 08:30:00",
+      "stock_id": "2330",
+      "link": "https://news.cnyes.com/news/id/5912345",
+      "source": "鉅亨網",
+      "title": "台積電第一季財報優於預期，AI 晶片需求強勁帶動營收成長"
+    },
+    {
+      "date": "2026-05-29 14:05:00",
+      "stock_id": "0050",
+      "link": "https://news.cnyes.com/news/id/5912401",
+      "source": "工商時報",
+      "title": "外資買超台股逾兩百億元，0050 成分股法人看好後市"
+    }
+  ]
+}

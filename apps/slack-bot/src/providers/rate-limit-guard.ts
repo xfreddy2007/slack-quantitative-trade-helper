@@ -17,13 +17,15 @@ function todayUtc(now: Date): string {
 export class RateLimitGuard {
   private readonly limit: number
   private readonly clock: () => Date
+  private readonly provider: string
 
   constructor(
     private readonly statePath: string,
-    opts?: { limit?: number; clock?: () => Date }
+    opts?: { limit?: number; clock?: () => Date; provider?: string }
   ) {
     this.limit = opts?.limit ?? 25
     this.clock = opts?.clock ?? (() => new Date())
+    this.provider = opts?.provider ?? 'Alpha Vantage'
   }
 
   private read(): State {
@@ -44,7 +46,7 @@ export class RateLimitGuard {
     const state = this.read()
     const count = state.utcDate === today ? state.count : 0
     if (count >= this.limit) {
-      const msg = `Alpha Vantage rate limit reached (${this.limit}/day). Resets at UTC midnight.`
+      const msg = `${this.provider} rate limit reached (${this.limit}/day). Resets at UTC midnight.`
       console.warn(`[RateLimitGuard] ${msg}`)
       throw new RateLimitExceeded(msg)
     }

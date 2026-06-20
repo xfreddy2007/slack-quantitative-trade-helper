@@ -50,6 +50,6 @@ describe('loadConfig', () => {
   it('optional keys may be omitted', () => {
     const config = loadConfig(VALID_ENV)
     expect(config.ALPHA_VANTAGE_API_KEY).toBeUndefined()
-    expect(config.FINMIND_API_KEY).toBeUndefined()
+    expect(config.FINMIND_API_TOKEN).toBeUndefined()
   })
 })

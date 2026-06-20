@@ -9,7 +9,7 @@ const EnvSchema = z.object({
   TZ: z.string().default('Asia/Taipei'),
   USER_LANGUAGE: z.string().default('zh-TW'),
   ALPHA_VANTAGE_API_KEY: z.string().optional(),
-  FINMIND_API_KEY: z.string().optional(),
+  FINMIND_API_TOKEN: z.string().optional(),
 })
 
 export type Config = z.infer<typeof EnvSchema>
