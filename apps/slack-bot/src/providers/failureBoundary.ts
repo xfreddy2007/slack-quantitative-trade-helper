@@ -8,6 +8,14 @@ export class AuthFailedError extends Error {
   }
 }
 
+/** Thrown by a provider chain when every provider (primary + all fallbacks) failed. */
+export class AllProvidersFailedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AllProvidersFailedError'
+  }
+}
+
 /** Minimal slice of SourceRepository needed to record a provider run. */
 export interface ProviderRunRecorder {
   createProviderRun(provider: string): Promise<string>
@@ -17,7 +25,7 @@ export interface ProviderRunRecorder {
   ): Promise<void>
 }
 
-export type IsolatedStatus = 'success' | 'rate_limit' | 'auth_failed' | 'failed'
+export type IsolatedStatus = 'success' | 'rate_limit' | 'auth_failed' | 'all_failed' | 'failed'
 
 export interface IsolatedResult<T> {
   status: IsolatedStatus
@@ -45,13 +53,16 @@ export async function runIsolated<T>(
   } catch (err) {
     // Classify into the `provider_runs.status` vocabulary:
     // rate limit → 'rate_limit'; token expiry/invalid → 'auth_failed';
+    // every provider in a chain exhausted → 'all_failed';
     // any other failure (network/API/timeout) → 'failed'.
     const status: IsolatedStatus =
       err instanceof RateLimitExceeded
         ? 'rate_limit'
         : err instanceof AuthFailedError
           ? 'auth_failed'
-          : 'failed'
+          : err instanceof AllProvidersFailedError
+            ? 'all_failed'
+            : 'failed'
     const errorMessage = err instanceof Error ? err.message : String(err)
     await recorder.completeProviderRun(runId, { status, errorMessage })
     return { status, data: fallback, runId }

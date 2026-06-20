@@ -2,6 +2,7 @@ import type { Market } from '@schemas/zod'
 import type { ProviderAdapter, NormalizedNewsItem, NormalizedPriceSnapshot } from './adapter.js'
 import type { RateLimitGuard } from './rate-limit-guard.js'
 import { AuthFailedError } from './failureBoundary.js'
+import { RateLimitExceeded } from './rate-limit-guard.js'
 
 const FINMIND_API_URL = 'https://api.finmindtrade.com/api/v4/data'
 
@@ -120,6 +121,10 @@ export class FinMindAdapter implements ProviderAdapter {
     // records `provider_run.status = auth_failed` instead of a generic failure.
     if (res.status === 401) {
       throw new AuthFailedError('FinMind authentication failed (HTTP 401): token expired or invalid')
+    }
+    // Server-side daily-quota rejection; the provider chain falls back to TWSE/TPEX on this.
+    if (res.status === 429) {
+      throw new RateLimitExceeded('FinMind rate limit reached (HTTP 429)')
     }
     if (!res.ok) throw new Error(`FinMind API error: ${res.status}`)
     return (await res.json()) as FinMindResponse<T>

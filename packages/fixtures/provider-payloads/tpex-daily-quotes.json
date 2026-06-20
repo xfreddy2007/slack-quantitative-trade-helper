@@ -1,0 +1,26 @@
+[
+  {
+    "Date": "1150529",
+    "SecuritiesCompanyCode": "6505",
+    "CompanyName": "台塑化",
+    "Close": "92.30",
+    "Change": "0.40",
+    "Open": "91.80",
+    "High": "92.50",
+    "Low": "91.50",
+    "TradingShares": "3850000",
+    "TransactionAmount": "355355000"
+  },
+  {
+    "Date": "1150529",
+    "SecuritiesCompanyCode": "5483",
+    "CompanyName": "中美晶",
+    "Close": "168.00",
+    "Change": "-1.50",
+    "Open": "169.00",
+    "High": "170.00",
+    "Low": "167.00",
+    "TradingShares": "2100000",
+    "TransactionAmount": "352800000"
+  }
+]

@@ -5,7 +5,7 @@ export { AlphaVantageAdapter, parseAlphaVantagePayload } from './alpha-vantage.j
 export type { AlphaVantagePayload } from './alpha-vantage.js'
 export { TwinkleHubStub } from './twinkle-hub-stub.js'
 export { RateLimitGuard, RateLimitExceeded } from './rate-limit-guard.js'
-export { runIsolated, AuthFailedError } from './failureBoundary.js'
+export { runIsolated, AuthFailedError, AllProvidersFailedError } from './failureBoundary.js'
 export type { ProviderRunRecorder, IsolatedStatus, IsolatedResult } from './failureBoundary.js'
 export {
   FinMindAdapter,
@@ -14,3 +14,9 @@ export {
   FINMIND_DAILY_LIMIT,
 } from './finmind.js'
 export type { FinMindResponse } from './finmind.js'
+export { TwseAdapter, parseTwsePrice } from './twse.js'
+export type { TwseStockDayRow } from './twse.js'
+export { TpexAdapter, parseTpexPrice } from './tpex.js'
+export type { TpexQuoteRow } from './tpex.js'
+export { FugleStub } from './fugle.js'
+export { TaiwanPriceProviderChain } from './taiwanPriceChain.js'

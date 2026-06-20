@@ -24,7 +24,7 @@ model SchemaVersion {
 model ProviderRun {
   id           String    @id @default(cuid())
   provider     String
-  status       String    // success | rate_limit | quota_exceeded | timeout | auth_failed | failed
+  status       String    // success | rate_limit | quota_exceeded | timeout | auth_failed | all_failed | failed
   startedAt    DateTime  @default(now())
   completedAt  DateTime?
   requestCount Int       @default(0)
