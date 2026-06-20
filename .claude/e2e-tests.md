@@ -149,7 +149,7 @@ test -f "$ROOT/apps/slack-bot/src/slack/commands/status.ts" \
   && echo "PHASE7=ACTIVE" || echo "PHASE7=INACTIVE"
 
 # Phase 9 — Provider adapters implemented
-test -f "$ROOT/apps/slack-bot/src/providers/alphaVantage/index.ts" \
+test -f "$ROOT/apps/slack-bot/src/providers/alpha-vantage.ts" \
   && echo "PHASE9=ACTIVE" || echo "PHASE9=INACTIVE"
 
 # Phase 10 — Evaluation and hardening implemented
@@ -663,13 +663,22 @@ rejected, timestamp >5min old rejected) as T10.2/T10.3 at that point.
 ### Group 11 — Provider Failure Isolation
 **Phase**: Phase 9
 **Purpose**: Provider failures are logged and isolated; Slack commands continue working.
+**Note**: T11.1–T11.1b cover T6.1.1 (Alpha Vantage adapter + rate limit guard).
+T11.2–T11.4 cover T6.2.1 (provider failure isolation via `provider_runs`) and require
+that task's logging layer; until T6.2.1 lands they are dependency-blocked, not regressions.
 
-#### T11.1 — Alpha Vantage adapter parses mock payload into normalized records
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/providers/alphaVantage.test.ts 2>&1`
-- Verify: exit code 0, normalized records have required fields (symbol, price, timestamp, source)
+#### T11.1 — Alpha Vantage adapter parses mock fixture payload into normalized news records
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/alphaVantage.test.ts 2>&1`
+- Verify: exit code 0; normalized records validate against `NewsFixtureSchema` with required fields (`title`, `source_url`, `market`, `published_at`, `content`); US fixture yields 2 records; non-US markets yield 0
 - Type: happy path
 
+#### T11.1b — Rate limit guard blocks calls beyond the daily UTC cap and resets at midnight
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/rateLimitGuard.test.ts 2>&1`
+- Verify: exit code 0; 26th call within one UTC day throws `RateLimitExceeded` and logs a warning; counter resets when the injected clock crosses UTC midnight; count persists across instances sharing a state path
+- Type: happy path + edge case
+
 #### T11.2 — Alpha Vantage rate limit reached logs rate_limit in provider_runs
+- **Depends on**: T6.2.1 (provider_runs failure-isolation logging — not yet implemented)
 - Command: simulate rate limit response (429 or quota exceeded message)
 - Verify: `provider_runs` DB row has status=`rate_limit` or `quota_exceeded`; no uncaught exception
 - Type: edge case

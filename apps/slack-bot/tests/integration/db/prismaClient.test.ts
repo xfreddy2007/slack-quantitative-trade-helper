@@ -23,6 +23,13 @@ describe('prismaClient — integration', () => {
     const db = getPrismaClient()
 
     try {
+      // Self-seed a sentinel row so this test is independent of external seed ordering
+      // (the blanket `npm test` runs before the e2e seed step). Upsert is idempotent.
+      await db.schemaVersion.upsert({
+        where: { version: '0.0.0-test' },
+        update: {},
+        create: { version: '0.0.0-test', description: 'prismaClient integration test sentinel' },
+      })
       const versions = await db.schemaVersion.findMany()
       expect(versions.length).toBeGreaterThan(0)
       expect(versions[0]).toHaveProperty('version')
