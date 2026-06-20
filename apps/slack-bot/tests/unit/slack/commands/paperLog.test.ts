@@ -25,6 +25,9 @@ afterEach(async () => {
   const db = getPrismaClient()
   try {
     if (createdRecommendationIds.length > 0) {
+      await db.paperEvaluation.deleteMany({
+        where: { paperRecommendationId: { in: createdRecommendationIds } },
+      })
       await db.paperRecommendation.deleteMany({ where: { id: { in: createdRecommendationIds } } })
       createdRecommendationIds.length = 0
     }
@@ -89,6 +92,54 @@ describe('commands/paperLog', () => {
       expect(text).toContain('TW')
       expect(text).toContain('pending')
       expect(text).toContain('1.5%–3%')
+    } catch (err: unknown) {
+      if (isDbUnavailable(err)) {
+        console.warn(
+          'Skipping DB integration — PostgreSQL not reachable:',
+          (err instanceof Error ? err.message : String(err)).split('\n')[0]
+        )
+        return
+      }
+      throw err
+    }
+  })
+
+  it('buildPaperLogMessage shows evaluation status and return summary for an evaluated record', async () => {
+    const db = getPrismaClient()
+
+    try {
+      const snapshot = await db.portfolioSnapshot.create({ data: { snapshotDate: new Date() } })
+      createdSnapshotIds.push(snapshot.id)
+
+      const rec = await db.paperRecommendation.create({
+        data: {
+          sourceType: 'trigger',
+          symbol: 'EVAL.US',
+          market: 'US',
+          action: 'buy',
+          rationale: TEST_MARKER,
+          confidence: 5,
+          portfolioSnapshotId: snapshot.id,
+          evaluationStatus: 'evaluated',
+        },
+      })
+      createdRecommendationIds.push(rec.id)
+
+      await db.paperEvaluation.create({
+        data: {
+          paperRecommendationId: rec.id,
+          horizonDays: 20,
+          returnPct: 2.2,
+          disciplineClassification: 'improved',
+          priceDataAvailable: true,
+        },
+      })
+
+      const text = await buildPaperLogMessage(db)
+
+      expect(text).toContain('EVAL.US')
+      expect(text).toContain('evaluated')
+      expect(text).toContain('+2.2% (20d)')
     } catch (err: unknown) {
       if (isDbUnavailable(err)) {
         console.warn(

@@ -124,3 +124,56 @@ def write_paper_recommendation(
             ),
         )
     return row_id
+
+
+def write_paper_evaluation(
+    conn,
+    paper_recommendation_id: str,
+    horizon_days: int,
+    return_pct: Optional[float] = None,
+    volatility_note: Optional[str] = None,
+    drawdown_note: Optional[str] = None,
+    discipline_score: Optional[float] = None,
+    discipline_classification: Optional[str] = None,
+    price_data_available: bool = True,
+    deferred_reason: Optional[str] = None,
+) -> str:
+    """Insert a paper_evaluations row and return its id."""
+    row_id = _new_id()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO paper_evaluations (
+                "id", "paperRecommendationId", "horizonDays", "returnPct",
+                "volatilityNote", "drawdownNote", "disciplineScore",
+                "disciplineClassification", "priceDataAvailable",
+                "deferredReason", "evaluatedAt", "createdAt"
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            """,
+            (
+                row_id,
+                paper_recommendation_id,
+                horizon_days,
+                return_pct,
+                volatility_note,
+                drawdown_note,
+                discipline_score,
+                discipline_classification,
+                price_data_available,
+                deferred_reason,
+            ),
+        )
+    return row_id
+
+
+def update_paper_recommendation_status(
+    conn,
+    paper_recommendation_id: str,
+    status: str,
+) -> None:
+    """Update the evaluationStatus of a paper_recommendations row."""
+    with conn.cursor() as cur:
+        cur.execute(
+            'UPDATE paper_recommendations SET "evaluationStatus" = %s WHERE "id" = %s',
+            (status, paper_recommendation_id),
+        )
