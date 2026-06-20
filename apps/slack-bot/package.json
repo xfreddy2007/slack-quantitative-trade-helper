@@ -12,7 +12,8 @@
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx tsx src/db/seed.ts",
     "pipeline:fixture": "tsx src/orchestration/pipelineFixture.ts",
-    "backtest:fixtures": "tsx src/orchestration/backtestFixtures.ts"
+    "backtest:fixtures": "tsx src/orchestration/backtestFixtures.ts",
+    "quality-gate": "tsx src/orchestration/qualityGate.ts"
   },
   "prisma": {
     "schema": "../../db/prisma/schema.prisma"
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.16.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "prisma": "^5.22.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",

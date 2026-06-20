@@ -195,3 +195,22 @@ npm run dev
 npm test
 cd research/quant-python && uv run pytest
 ```
+
+## Quality gate
+
+`npm run quality-gate` (root) is the primary CI acceptance check. It runs the full fixture
+pipeline end-to-end and asserts the MVP success criteria, exiting non-zero with a step-tagged
+message on the first failure:
+
+1. **pipeline** — the fixture pipeline (`pipeline:fixture`) completes successfully.
+2. **records** — at least one `daily_recommendation` and one `paper_recommendation` were created.
+3. **render** — the Slack daily render contains all required sections (`今日觀察`, `可考慮調整`,
+   `不建議動作`).
+
+```bash
+npm run quality-gate          # exits 0 and prints a PASS summary when all checks pass
+```
+
+Requires a running Postgres (`docker compose up -d postgres`) and a `.env` with `DATABASE_URL`.
+A full MVP review (security, coverage, deployment readiness) lives in
+[docs/mvp-review.md](docs/mvp-review.md). Trigger-rule backtesting is `npm run backtest:fixtures`.

@@ -28,3 +28,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
+[tool.coverage.run]
+# Job modules are thin CLI entrypoints exercised by the e2e fixture pipeline
+# (e2e Groups 5/8/12), not pytest. Exclude them so the figure reflects library coverage.
+omit = ["*/jobs/*"]
+

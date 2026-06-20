@@ -17,6 +17,7 @@
     "src/orchestration/marketClassifier.ts",
     "src/orchestration/ingestFixtureSources.ts",
     "src/orchestration/pipelineFixture.ts",
-    "src/orchestration/backtestFixtures.ts"
+    "src/orchestration/backtestFixtures.ts",
+    "src/orchestration/qualityGate.ts"
   ]
 }
