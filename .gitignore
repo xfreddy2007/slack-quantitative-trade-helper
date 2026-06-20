@@ -39,3 +39,7 @@ __pycache__/
 .ruff_cache/
 htmlcov/
 .coverage
+
+# Backtest reports are generated artifacts (T8.2.1); keep the dir, ignore dated output
+/docs/backtest-results/*.md
+!/docs/backtest-results/.gitkeep

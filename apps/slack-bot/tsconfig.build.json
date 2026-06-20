@@ -16,6 +16,7 @@
     "src/fixtures",
     "src/orchestration/marketClassifier.ts",
     "src/orchestration/ingestFixtureSources.ts",
-    "src/orchestration/pipelineFixture.ts"
+    "src/orchestration/pipelineFixture.ts",
+    "src/orchestration/backtestFixtures.ts"
   ]
 }
