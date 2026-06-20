@@ -6,6 +6,7 @@ class Settings(BaseModel):
     database_url: str = Field(..., min_length=1)
     app_timezone: str = 'Asia/Taipei'
     default_evaluation_horizons_days: list[int] = [20, 60, 120]
+    feedback_window_days: int = 30
 
 
 def load_settings(env: dict[str, str] | None = None) -> Settings:

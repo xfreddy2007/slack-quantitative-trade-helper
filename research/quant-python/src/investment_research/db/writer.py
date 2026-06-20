@@ -177,3 +177,55 @@ def update_paper_recommendation_status(
             'UPDATE paper_recommendations SET "evaluationStatus" = %s WHERE "id" = %s',
             (status, paper_recommendation_id),
         )
+
+
+def write_feedback_event(
+    conn,
+    paper_recommendation_id: str,
+    feedback: str,
+    slack_message_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> str:
+    """Insert a feedback_events row and return its id.
+
+    feedback is one of: useful | not_useful | too_noisy | too_late.
+    """
+    row_id = _new_id()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO feedback_events (
+                "id", "slackMessageId", "paperRecommendationId",
+                "userId", "feedback", "createdAt"
+            ) VALUES (%s, %s, %s, %s, %s, NOW())
+            """,
+            (
+                row_id,
+                slack_message_id,
+                paper_recommendation_id,
+                user_id,
+                feedback,
+            ),
+        )
+    return row_id
+
+
+def read_feedback_signals(conn, since) -> list[tuple[str, str]]:
+    """Return (symbol, feedback) tuples for feedback events at/after `since`.
+
+    Joins feedback_events to paper_recommendations on paperRecommendationId,
+    ordered by symbol for determinism.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT pr."symbol", fe."feedback"
+            FROM feedback_events fe
+            JOIN paper_recommendations pr ON fe."paperRecommendationId" = pr."id"
+            WHERE fe."createdAt" >= %s
+            ORDER BY pr."symbol"
+            """,
+            (since,),
+        )
+        rows = cur.fetchall()
+    return [(r[0], r[1]) for r in rows]
