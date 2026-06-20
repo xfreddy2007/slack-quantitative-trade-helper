@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { FixtureProvider, AlphaVantageStub, TwinkleHubStub } from '../../src/providers/index.js'
 
 describe('FixtureProvider', () => {
@@ -95,5 +95,17 @@ describe('TwinkleHubStub', () => {
   it('fetchMarketSnapshot returns empty array', async () => {
     const result = await stub.fetchMarketSnapshot(['0050.TW'])
     expect(result).toEqual([])
+  })
+
+  it('returns empty results without making any external calls', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      expect(await stub.fetchNews('US')).toEqual([])
+      expect(await stub.fetchMarketSnapshot(['2330.TW'])).toEqual([])
+      expect(fetchMock).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
