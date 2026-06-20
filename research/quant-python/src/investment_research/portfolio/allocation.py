@@ -20,6 +20,7 @@ class AllocationResult:
     market_value_base: Decimal  # total market value of bucket in base currency
     symbols: list[str] = field(default_factory=list)
     tax_sensitive: bool = False  # True if any holding in bucket has cost_basis set
+    unrealized_gain_pct: float | None = None  # set only for tax_sensitive buckets with cost > 0
 
 
 def calculate_allocation(
@@ -43,6 +44,7 @@ def calculate_allocation(
     bucket_values: dict[str, Decimal] = {t.bucket: Decimal('0') for t in portfolio.allocation_targets}
     bucket_symbols: dict[str, list[str]] = {t.bucket: [] for t in portfolio.allocation_targets}
     bucket_tax_sensitive: dict[str, bool] = {t.bucket: False for t in portfolio.allocation_targets}
+    bucket_cost: dict[str, Decimal] = {t.bucket: Decimal('0') for t in portfolio.allocation_targets}
 
     for holding in portfolio.holdings:
         if holding.target_bucket is None:
@@ -79,6 +81,11 @@ def calculate_allocation(
 
         if holding.cost_basis is not None:
             bucket_tax_sensitive[holding.target_bucket] = True
+            cost_value = holding.quantity * holding.cost_basis.avg_cost
+            if exchange_rates is not None:
+                cost_rate = exchange_rates.get(holding.currency, Decimal('1'))
+                cost_value = cost_value * cost_rate
+            bucket_cost[holding.target_bucket] += cost_value
 
     # --- compute total portfolio value ---
     total_value = sum(bucket_values.values())
@@ -96,6 +103,12 @@ def calculate_allocation(
         drift = alloc_pct - target.target_pct
         is_drifted = abs(drift) >= target.drift_threshold_pct
 
+        cost = bucket_cost[target.bucket]
+        if bucket_tax_sensitive[target.bucket] and cost > Decimal('0'):
+            unrealized_gain_pct = float((mv - cost) / cost * Decimal('100'))
+        else:
+            unrealized_gain_pct = None
+
         results.append(
             AllocationResult(
                 bucket=target.bucket,
@@ -107,6 +120,7 @@ def calculate_allocation(
                 market_value_base=mv,
                 symbols=bucket_symbols[target.bucket],
                 tax_sensitive=bucket_tax_sensitive[target.bucket],
+                unrealized_gain_pct=unrealized_gain_pct,
             )
         )
 

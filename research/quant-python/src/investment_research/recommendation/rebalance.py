@@ -24,6 +24,7 @@ def recommend_rebalance(
     allocation_results: list[AllocationResult],
     cash_pct: float,
     minimum_cash_pct: float = 5.0,
+    tax_gain_threshold_pct: float = 20.0,
 ) -> list[RoutineRecommendation]:
     """Convert drift detection output into bounded advisory recommendations.
 
@@ -32,6 +33,9 @@ def recommend_rebalance(
         cash_pct: Current cash percentage of total portfolio value.
         minimum_cash_pct: Cash floor. add_position is suppressed when
             cash_pct < minimum_cash_pct; rebalance is emitted instead.
+        tax_gain_threshold_pct: When an over-allocated bucket is tax_sensitive
+            and its unrealized_gain_pct is at/above this threshold, reduce_position
+            is deferred and replaced by a monitor recommendation.
 
     Returns:
         Single do_not_act when all buckets are within threshold.
@@ -79,12 +83,27 @@ def recommend_rebalance(
                     f'{HUMAN_REVIEW_PHRASE}'
                 )
         else:
-            action = 'reduce_position'
-            rationale = (
-                f'Bucket {result.bucket} over-allocated by {drift_magnitude:.1f}% '
-                f'(target {result.target_pct:.1f}%, actual {result.allocation_pct:.1f}%). '
-                f'{HUMAN_REVIEW_PHRASE}'
+            tax_deferral = (
+                result.tax_sensitive
+                and result.unrealized_gain_pct is not None
+                and result.unrealized_gain_pct >= tax_gain_threshold_pct
             )
+            if tax_deferral:
+                action = 'monitor'
+                rationale = (
+                    f'Bucket {result.bucket} over-allocated by {drift_magnitude:.1f}% '
+                    f'(target {result.target_pct:.1f}%, actual {result.allocation_pct:.1f}%), '
+                    f'but it holds a large unrealized gain ({result.unrealized_gain_pct:.1f}%). '
+                    f'Selling is deferred to avoid realising taxable gains; monitor instead. '
+                    f'{HUMAN_REVIEW_PHRASE}'
+                )
+            else:
+                action = 'reduce_position'
+                rationale = (
+                    f'Bucket {result.bucket} over-allocated by {drift_magnitude:.1f}% '
+                    f'(target {result.target_pct:.1f}%, actual {result.allocation_pct:.1f}%). '
+                    f'{HUMAN_REVIEW_PHRASE}'
+                )
 
         suggested_size_max_pct = round(drift_magnitude, 2)
         suggested_size_min_pct = round(min(drift_magnitude * 0.5, suggested_size_max_pct), 2)

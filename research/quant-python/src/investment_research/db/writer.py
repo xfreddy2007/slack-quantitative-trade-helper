@@ -35,6 +35,44 @@ def write_portfolio_snapshot(
     return row_id
 
 
+def write_holding(
+    conn,
+    portfolio_snapshot_id: str,
+    symbol: str,
+    market: str,
+    asset_type: str,
+    quantity: Decimal,
+    currency: str,
+    cost_basis: Optional[Decimal] = None,
+    avg_cost: Optional[Decimal] = None,
+    target_bucket: Optional[str] = None,
+) -> str:
+    """Insert a holdings row and return its id."""
+    row_id = _new_id()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO holdings (
+                "id", "portfolioSnapshotId", "symbol", "market", "assetType",
+                "quantity", "costBasis", "avgCost", "currency", "targetBucket"
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                row_id,
+                portfolio_snapshot_id,
+                symbol,
+                market,
+                asset_type,
+                quantity,
+                cost_basis,
+                avg_cost,
+                currency,
+                target_bucket,
+            ),
+        )
+    return row_id
+
+
 def write_daily_recommendation(
     conn,
     portfolio_snapshot_id: str,
