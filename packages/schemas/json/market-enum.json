@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Market",
+  "type": "string",
+  "enum": ["TW", "US", "GLOBAL"],
+  "description": "Investment market identifier. TW = Taiwan, US = United States, GLOBAL = cross-market."
+}

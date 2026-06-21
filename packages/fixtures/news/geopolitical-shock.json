@@ -1,0 +1,12 @@
+{
+  "title": "Taiwan Strait Tensions Escalate: PLA Conducts Largest Military Exercise Since 2023",
+  "source_url": "https://fixture.example.com/news/geopolitical-shock-2026-0529",
+  "market": "GLOBAL",
+  "published_at": "2026-05-29T02:00:00.000Z",
+  "content": "The People's Liberation Army launched large-scale military exercises in the Taiwan Strait involving over 80 aircraft and 20 naval vessels. The exercises include simulated blockade scenarios and live-fire drills. Taiwan's Ministry of National Defense issued a Level-3 alert. Regional markets opened sharply lower with Taiwan Futures Index down 3.8%. USD/TWD surged past 32.5. Technology supply chains face disruption risk as shipping lanes are affected.",
+  "expected_tags": ["geopolitical", "taiwan_strait", "risk", "military", "supply_chain"],
+  "expected_severity": 5,
+  "expected_confidence": 4,
+  "author": "fixture",
+  "provider": "fixture"
+}

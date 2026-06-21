@@ -1,0 +1,81 @@
+{
+  "name": "Mixed Portfolio",
+  "description": "Balanced cross-market allocation — U.S. ETF core, Taiwan ETF core, Taiwan individual stock, cash. All TW and US holdings have cost_basis set for tax-sensitive mode testing.",
+  "allocation_targets": [
+    {
+      "bucket": "us_core_etf",
+      "target_pct": 40,
+      "drift_threshold_pct": 5,
+      "markets": ["US"],
+      "asset_types": ["ETF"]
+    },
+    {
+      "bucket": "taiwan_core_etf",
+      "target_pct": 30,
+      "drift_threshold_pct": 5,
+      "markets": ["TW"],
+      "asset_types": ["ETF"]
+    },
+    {
+      "bucket": "taiwan_individual",
+      "target_pct": 10,
+      "drift_threshold_pct": 5,
+      "markets": ["TW"],
+      "asset_types": ["stock"]
+    },
+    {
+      "bucket": "cash_or_short_term",
+      "target_pct": 20,
+      "drift_threshold_pct": 5,
+      "markets": ["TW", "US"],
+      "asset_types": ["cash"]
+    }
+  ],
+  "holdings": [
+    {
+      "symbol": "VOO",
+      "market": "US",
+      "asset_type": "ETF",
+      "quantity": 30,
+      "currency": "USD",
+      "cost_basis": {
+        "avg_cost": 420.50,
+        "currency": "USD",
+        "lot_method": "fifo"
+      },
+      "strategy": "long_term_core",
+      "target_bucket": "us_core_etf",
+      "max_single_alert_sell_pct": 50
+    },
+    {
+      "symbol": "0050.TW",
+      "market": "TW",
+      "asset_type": "ETF",
+      "quantity": 100,
+      "currency": "TWD",
+      "cost_basis": {
+        "avg_cost": 128.50,
+        "currency": "TWD",
+        "lot_method": "weighted_avg"
+      },
+      "strategy": "taiwan_core",
+      "target_bucket": "taiwan_core_etf",
+      "max_single_alert_sell_pct": 30
+    },
+    {
+      "symbol": "2330.TW",
+      "market": "TW",
+      "asset_type": "stock",
+      "quantity": 2,
+      "currency": "TWD",
+      "cost_basis": {
+        "avg_cost": 750.00,
+        "currency": "TWD",
+        "lot_method": "weighted_avg"
+      },
+      "strategy": "taiwan_individual",
+      "target_bucket": "taiwan_individual",
+      "max_single_alert_sell_pct": 25
+    }
+  ]
+}

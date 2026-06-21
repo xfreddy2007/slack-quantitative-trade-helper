@@ -1,0 +1,20 @@
+{
+  "tool": "twtools-lookup_company_by_tax_id",
+  "query": { "tax_id": "23491702" },
+  "result": {
+    "company_name": "台灣積體電路製造股份有限公司",
+    "company_name_en": "TAIWAN SEMICONDUCTOR MANUFACTURING CO., LTD.",
+    "tax_id": "23491702",
+    "status": "核准設立",
+    "capital": 259302800000,
+    "industry_code": "2611",
+    "industry_desc": "積體電路製造業",
+    "registered_address": "新竹科學園區力行六路8號",
+    "executives": [
+      { "title": "董事長", "name": "魏哲家" },
+      { "title": "總裁", "name": "魏哲家" }
+    ],
+    "stock_exchange": "TWSE",
+    "stock_symbol": "2330"
+  }
+}

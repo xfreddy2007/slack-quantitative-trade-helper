@@ -39,3 +39,26 @@ prisma/migrations/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal portfolio and user-specific output
+knowledge/wiki/
+knowledge/raw/
+knowledge/evaluations/
+
+# Alert logs
+*.alert.log
+logs/
+
+# Additional Python cache/coverage
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Backtest reports are generated artifacts (T8.2.1); keep the dir, ignore dated output
+/docs/backtest-results/*.md
+!/docs/backtest-results/.gitkeep
+
+# Coverage output
+coverage/

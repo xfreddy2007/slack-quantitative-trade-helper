@@ -1,0 +1,10 @@
+{
+  "symbol": "2330.TW",
+  "market": "TW",
+  "price": 805.00,
+  "currency": "TWD",
+  "timestamp": "2026-05-29T05:30:00.000Z",
+  "provider": "fixture",
+  "volume": 35700000,
+  "change_pct": 1.26
+}

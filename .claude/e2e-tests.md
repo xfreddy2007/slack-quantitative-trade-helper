@@ -72,7 +72,7 @@ If `POSTGRES_TIMEOUT` → abort: ❌ PostgreSQL did not become healthy within 60
 
 ### S4 — Apply Prisma migrations
 
-**Requires: Phase 1 active**
+**Requires: PHASE1_SCHEMA active**
 
 ```bash
 cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && \
@@ -90,23 +90,44 @@ Run each check. Record label as `ACTIVE` or `INACTIVE`.
 ```bash
 ROOT=/Users/xfreddy2007/Documents/Self-projects/investment-helper
 
-# Phase 1 — DB and TS/Python package scaffolds exist
+# Phase 1a — TS/Python package scaffolds exist (T-0101, T-0102)
+test -f "$ROOT/apps/slack-bot/package.json" \
+  && test -f "$ROOT/research/quant-python/pyproject.toml" \
+  && echo "PHASE1_SCAFFOLD=ACTIVE" || echo "PHASE1_SCAFFOLD=INACTIVE"
+
+# Phase 1b — Prisma schema exists (T-0103); gating DB-dependent tests
+test -f "$ROOT/db/prisma/schema.prisma" \
+  && echo "PHASE1_SCHEMA=ACTIVE" || echo "PHASE1_SCHEMA=INACTIVE"
+
+# Phase 1 — combined: scaffold + schema (legacy alias; used by downstream checks)
 test -f "$ROOT/apps/slack-bot/package.json" \
   && test -f "$ROOT/research/quant-python/pyproject.toml" \
   && test -f "$ROOT/db/prisma/schema.prisma" \
   && echo "PHASE1=ACTIVE" || echo "PHASE1=INACTIVE"
 
-# Phase 2 — Fixture assets created
-test -d "$ROOT/packages/fixtures/portfolios" \
-  && test -d "$ROOT/packages/fixtures/prices" \
-  && test -d "$ROOT/packages/fixtures/news" \
+# Phase 2 — Fixture asset JSON files created (T-0201 to T-0204)
+# Check for actual files, not just directories (dirs exist from T1.1.1 skeleton)
+find "$ROOT/packages/fixtures/portfolios" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
+  && find "$ROOT/packages/fixtures/prices" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
+  && find "$ROOT/packages/fixtures/news" -maxdepth 1 -name "*.json" 2>/dev/null | grep -q . \
   && echo "PHASE2=ACTIVE" || echo "PHASE2=INACTIVE"
 
-# Phase 3 — TypeScript app shell implemented
+# Phase 3 — TypeScript app shell implemented (config + db + renderer + command router)
 test -f "$ROOT/apps/slack-bot/src/config/index.ts" \
+  && test -f "$ROOT/apps/slack-bot/src/db/prismaClient.ts" \
+  && test -f "$ROOT/apps/slack-bot/src/renderers/dailyRecommendation.ts" \
   && echo "PHASE3=ACTIVE" || echo "PHASE3=INACTIVE"
 
-# Phase 4 — Python quant core implemented
+# Phase 4a — Portfolio models + allocation + drift (T2.1.1)
+test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocation.py" \
+  && test -f "$ROOT/research/quant-python/src/investment_research/portfolio/drift.py" \
+  && echo "PHASE4_ALLOCATION=ACTIVE" || echo "PHASE4_ALLOCATION=INACTIVE"
+
+# Phase 4b — Event-aware risk adjustment (T2.2.2)
+test -f "$ROOT/research/quant-python/src/investment_research/recommendation/event_adjustment.py" \
+  && echo "PHASE4_EVENT=ACTIVE" || echo "PHASE4_EVENT=INACTIVE"
+
+# Phase 4 — Full quant core including daily recommendation job
 test -f "$ROOT/research/quant-python/src/investment_research/portfolio/allocation.py" \
   && test -f "$ROOT/research/quant-python/src/investment_research/jobs/generate_daily_recommendations.py" \
   && echo "PHASE4=ACTIVE" || echo "PHASE4=INACTIVE"
@@ -128,7 +149,7 @@ test -f "$ROOT/apps/slack-bot/src/slack/commands/status.ts" \
   && echo "PHASE7=ACTIVE" || echo "PHASE7=INACTIVE"
 
 # Phase 9 — Provider adapters implemented
-test -f "$ROOT/apps/slack-bot/src/providers/alphaVantage/index.ts" \
+test -f "$ROOT/apps/slack-bot/src/providers/alpha-vantage.ts" \
   && echo "PHASE9=ACTIVE" || echo "PHASE9=INACTIVE"
 
 # Phase 10 — Evaluation and hardening implemented
@@ -148,28 +169,114 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 - Already verified in Infrastructure Setup S3. Record PASS if S3 passed.
 
 #### T0.2 — Prisma schema validates
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCHEMA
 - Command: `npx prisma validate --schema /Users/xfreddy2007/Documents/Self-projects/investment-helper/db/prisma/schema.prisma`
 - Verify: exit code 0
 - Type: happy path
 
 #### T0.3 — TypeScript test suite passes
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCAFFOLD
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npm test 2>&1`
 - Verify: exit code 0
 - Type: happy path
 
 #### T0.4 — Python test suite passes
-- **Phase**: Phase 1
+- **Phase**: PHASE1_SCAFFOLD
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest 2>&1`
+- Verify: exit code 0
+- Type: happy path
+
+#### T0.5 — TypeScript build produces no type errors
+- **Phase**: PHASE1_SCAFFOLD
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npm run typecheck 2>&1`
+- Verify: exit code 0, no type errors
+- Type: happy path
+
+#### T0.6 — Python package installs without errors
+- **Phase**: PHASE1_SCAFFOLD
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv sync 2>&1`
 - Verify: exit code 0
 - Type: happy path
 
 ---
 
-### Group 1 — Fixture Assets
-**Phase**: Phase 2
-**Purpose**: All fixture files load and validate correctly.
+### Group 0A — Shared Schemas and Database Seed
+**Phase**: PHASE1_SCHEMA
+**Purpose**: Prisma migration applies cleanly, shared Zod schemas compile, and DB seed is idempotent.
+
+#### T0A.1 — Prisma migration applies to clean local DB
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npx prisma migrate deploy --schema db/prisma/schema.prisma 2>&1`
+- Verify: exit code 0, migration completes without errors
+- Type: happy path
+
+#### T0A.2 — Zod schemas import and compile without TypeScript errors
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/providers/fixtures/index.ts').then(() => { console.log('OK'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })" 2>&1`
+- Verify: exit code 0, output contains `OK`
+- Type: happy path
+
+#### T0A.3 — DB seed inserts schema_versions row
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npx tsx db/seeds/seed.ts 2>&1`
+- Verify: exit code 0, output confirms at least one `schema_versions` row inserted
+- Type: happy path
+
+#### T0A.4 — DB seed is idempotent on re-run
+- Command: run seed script twice in sequence
+- Verify: second run exits 0, no duplicate key errors, row count unchanged
+- Type: edge case
+
+#### T0A.5 — Missing DATABASE_URL produces a clear startup error (not a crash)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && DATABASE_URL="" npx tsx src/config/index.ts 2>&1`
+- Verify: exit code non-zero, output contains readable error about `DATABASE_URL`; no unhandled exception stack trace without context
+- Type: error case
+
+---
+
+### Group 0B — TypeScript App Shell
+**Phase**: Phase 3 (`PHASE3=ACTIVE`)
+**Purpose**: Env validation, DB client, provider adapter, renderer, and command router are correct in isolation.
+
+#### T0B.1 — Valid env passes Zod validation without error
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && set -a && source /Users/xfreddy2007/Documents/Self-projects/investment-helper/.env && set +a && npx tsx -e "import('./src/config/index.ts').then(m => { m.loadConfig(); console.log('VALID'); process.exit(0); }).catch(e => { console.error(e.message); process.exit(1); })" 2>&1`
+- Verify: exit code 0, output contains `VALID`
+- Type: happy path
+
+#### T0B.2 — Missing SLACK_BOT_TOKEN throws Zod validation error with field name
+- Command: same as T0B.1 but with `SLACK_BOT_TOKEN=""` set after sourcing `.env` (overrides the loaded value)
+- Verify: exit code non-zero, output contains `SLACK_BOT_TOKEN` in error message
+- Type: error case
+
+#### T0B.3 — Prisma client wrapper connects to local DB and reads schema_versions
+- Command: integration test in `apps/slack-bot/tests/integration/db/prismaClient.test.ts`
+- Verify: exit code 0, query returns at least 1 row from `schema_versions`
+- **Depends on**: T0A.3 (seed has run)
+- Type: happy path
+
+#### T0B.4 — Fixture provider adapter contract test passes
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/integration/providers/fixtureAdapter.test.ts 2>&1`
+- Verify: exit code 0, normalized source records have required fields (`symbol`, `provider`, `timestamp`)
+- Type: happy path
+
+#### T0B.5 — Slack daily recommendation renderer includes Traditional Chinese section headings
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/unit/renderers/dailyRecommendation.snapshot.ts 2>&1`
+- Verify: exit code 0, output contains `今日觀察`, `可考慮調整`, `不建議動作`
+- Type: happy path
+
+#### T0B.6 — Slack renderer includes paper-only disclaimer
+- Command: same snapshot test
+- Verify: output contains text indicating no broker order will be placed
+- Type: happy path (negative assertion)
+
+#### T0B.7 — Unknown Slack subcommand returns usage help without error stack
+- Command: integration test for command router with unknown input
+- Verify: response text contains usage hint, no unhandled exception output
+- Type: error case
+
+---
+
+### Group 1 — Fixture Assets via Loader
+**Phase**: Phase 3 (`PHASE3=ACTIVE`)
+**Purpose**: Fixture files load correctly via the TypeScript fixture loader module (`src/providers/fixtures/index.ts`, implemented in T-0303).
+**Note**: Fixture file content validation (Zod schemas) is covered by `tests/fixtures/fixtures.test.ts` (PHASE2, unit tests). This group tests the loader interface.
 
 #### T1.1 — Taiwan ETF portfolio fixture loads
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx -e "import('./src/providers/fixtures/index.ts').then(m => m.loadPortfolioFixture('tw-etf')).then(p => { console.log(JSON.stringify(p)); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })" 2>&1`
@@ -193,7 +300,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 
 #### T1.5 — News fixtures load with required fields
 - Command: same pattern for all news fixtures
-- Verify: exit code 0, each record has `title`, `url`, `market`, `published_at`, `content`
+- Verify: exit code 0, each record has `title`, `source_url`, `market`, `published_at`, `content`
 - Type: happy path
 
 #### T1.6 — Malformed fixture returns validation error without crashing
@@ -204,9 +311,19 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 ---
 
 ### Group 2 — Portfolio Models and Allocation
-**Phase**: Phase 4
+**Phase**: PHASE4_ALLOCATION
 **Purpose**: Allocation calculation is correct for all portfolio types.
-**Depends on**: Group 1 (fixtures loaded)
+**Depends on**: fixture JSON files in packages/fixtures/ (PHASE2)
+
+#### T2.0 — Python Pydantic settings loads valid config without error
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/config/test_settings.py -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: happy path
+
+#### T2.0b — Python settings raises ValidationError when DATABASE_URL missing
+- Command: `uv run pytest tests/config/test_settings.py::test_missing_database_url -v 2>&1`
+- Verify: exit code 0, `PASSED` (test expects ValidationError)
+- Type: error case
 
 #### T2.1 — Taiwan ETF allocation percentages sum to 100
 - Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/portfolio/test_allocation.py::test_tw_etf_allocation_sums_to_100 -v 2>&1`
@@ -241,90 +358,101 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 ---
 
 ### Group 3 — Drift Detection and Rebalancing
-**Phase**: Phase 4
+**Phase**: PHASE4_ALLOCATION
 **Purpose**: Drift thresholds and rebalancing rules fire correctly.
 
 #### T3.1 — Allocation within threshold produces no-action
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_within_threshold_no_action -v 2>&1`
-- Verify: exit code 0, recommended_action is `do_not_act` or `hold`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_within_threshold_returns_do_not_act -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T3.2 — Allocation exceeds threshold produces rebalance recommendation
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_exceeds_threshold_rebalance -v 2>&1`
-- Verify: exit code 0, recommended_action is `rebalance`, suggested_size_min and suggested_size_max are non-null
+#### T3.2 — Allocation exceeds threshold produces recommendation with size range
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_single_bucket_over_allocated_returns_reduce_position tests/recommendation/test_rebalance.py::test_rebalance_size_range_is_half_to_full_drift_magnitude -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, suggested_size_min and suggested_size_max are non-null
 - Type: happy path
 
-#### T3.3 — Rebalance recommendation includes rationale and confidence
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_rebalance_includes_rationale -v 2>&1`
-- Verify: exit code 0, output contains rationale string and confidence value 1-5
+#### T3.3 — Rebalance recommendation includes human-review rationale and confidence
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_multi_bucket_all_non_do_not_act_include_human_review tests/recommendation/test_rebalance.py::test_rebalance_confidence_bounded_zero_to_one -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
 #### T3.4 — Cash below minimum floor suppresses add_position
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_low_cash_suppresses_add_position -v 2>&1`
-- Verify: exit code 0, recommended_action is NOT `add_position`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_rebalance.py::test_rebalance_cash_floor_suppresses_add_position tests/recommendation/test_rebalance.py::test_rebalance_cash_floor_rationale_mentions_cash_constraint -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, recommended_action is NOT `add_position`
 - Type: edge case
 
-#### T3.5 — Routine drift and event risk both present produces two separate sections
-- Command: `uv run pytest tests/recommendation/test_drift.py::test_dual_signal_separate_sections -v 2>&1`
-- Verify: exit code 0, output distinguishes routine_rebalance from event_adjustment
-- Type: edge case
+#### T3.5 — Event-aware recommendation honours all required output fields
+- **Phase**: PHASE4_EVENT
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_all_outputs_have_required_fields -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: happy path
 
 ---
 
 ### Group 4 — Event-Aware Risk Adjustment
-**Phase**: Phase 4
+**Phase**: PHASE4_EVENT
 **Purpose**: Event severity, relevance, and confidence drive the right advisory action.
 
-#### T4.1 — severity 4 + relevance 3 + confidence 3 produces reduce_position or hedge
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev4_rel3_conf3_produces_action -v 2>&1`
-- Verify: exit code 0, recommended_action in [`reduce_position`, `hedge`]
+#### T4.1 — severity 4 + relevance 3 + confidence 3 produces reduce_position
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_high_severity_relevant_returns_reduce_position -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T4.2 — severity 5 + relevance 4 + low confidence still produces alert with uncertainty note
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev5_low_conf_uncertainty_note -v 2>&1`
-- Verify: exit code 0, recommended_action set, rationale contains uncertainty language
+#### T4.2 — severity 5 + relevance 4 + low confidence produces alert with uncertainty note
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_severity5_override_rationale_mentions_uncertainty -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, rationale contains uncertainty/confidence language
 - Type: edge case
 
 #### T4.3 — severity 4 + confidence 1 produces monitor or research_required (not reduce)
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev4_low_conf_monitor_only -v 2>&1`
-- Verify: exit code 0, recommended_action in [`monitor`, `research_required`]
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_low_confidence_returns_monitor_not_reduce tests/recommendation/test_event_adjustment.py::test_event_aware_confidence_1_returns_monitor -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
 #### T4.4 — Event irrelevant to holdings produces do_not_act
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_irrelevant_event_no_action -v 2>&1`
-- Verify: exit code 0, recommended_action is `do_not_act`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_high_severity_irrelevant_returns_do_not_act tests/recommendation/test_event_adjustment.py::test_event_aware_relevance_below_3_always_do_not_act_regardless_of_severity -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
-#### T4.5 — severity 5 + portfolio_relevance < 4 falls back to normal threshold
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_sev5_low_relevance_normal_threshold -v 2>&1`
-- Verify: exit code 0, alert_should_post reflects normal threshold rule
+#### T4.5 — severity 5 + low confidence override returns research_required
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_severity5_override_with_low_confidence_returns_research_required -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: edge case
 
-#### T4.6 — Event with null affected tickers produces no portfolio impact
-- Command: `uv run pytest tests/recommendation/test_event_adjustment.py::test_null_tickers_no_impact -v 2>&1`
-- Verify: exit code 0, affected_holdings is empty, recommended_action is `do_not_act`
+#### T4.6 — Empty affected exposures produces do_not_act
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/recommendation/test_event_adjustment.py::test_event_aware_empty_exposures_returns_do_not_act -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`, affected_symbols is empty
 - Type: error case
 
 ---
 
-### Group 5 — Paper Recommendation Writer
+### Group 5 — Paper Recommendation Writer and Daily Job
 **Phase**: Phase 4
-**Purpose**: Paper recommendations are persisted correctly and retrievable.
+**Purpose**: Paper recommendations are persisted correctly; daily job is idempotent and exits cleanly.
 
-#### T5.1 — Rebalancing recommendation writes full paper_recommendation row
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_rebalance_writes_full_row -v 2>&1`
-- Verify: exit code 0, row contains symbol, market, action, suggested_size_min, suggested_size_max, rationale, confidence, portfolio_snapshot_id, created_at
+#### T5.1 — Write + read back paper_recommendation row with all required fields
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_write_and_read_back -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T5.2 — Written paper recommendation is readable by ID
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_paper_recommendation_readable_by_id -v 2>&1`
-- Verify: exit code 0, retrieved row matches written row by id
+#### T5.2 — evaluation_status defaults to pending
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_evaluation_status_defaults_to_pending -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
 - Type: happy path
 
-#### T5.3 — Paper recommendation never sends broker order
-- Command: `uv run pytest tests/db/test_paper_recommendation.py::test_no_broker_order_sent -v 2>&1`
-- Verify: exit code 0, no `execution` or `broker_order` records created
-- Type: happy path (negative assertion)
+#### T5.3 — Daily recommendation idempotent for same calendar date
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_daily_recommendation_idempotent_same_date -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: edge case
+
+#### T5.4 — Missing DATABASE_URL exits with clear error message (not traceback)
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && uv run pytest tests/jobs/test_paper_recommendation.py::test_paper_recommendation_missing_database_url_exits_with_message -v 2>&1`
+- Verify: exit code 0, output contains `PASSED`
+- Type: error case
+
+#### T5.5 — CLI job exits zero and prints created IDs for mixed fixture
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/research/quant-python && DATABASE_URL=$(grep '^DATABASE_URL' /Users/xfreddy2007/Documents/Self-projects/investment-helper/.env | cut -d= -f2-) uv run python -m investment_research.jobs.generate_daily_recommendations --fixture /Users/xfreddy2007/Documents/Self-projects/investment-helper/packages/fixtures/portfolios/mixed.yaml 2>&1`
+- Verify: exit code 0, output contains `Created daily_recommendation:` or `Daily recommendation already exists`
+- Type: happy path
 
 ---
 
@@ -426,7 +554,7 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Depends on**: Groups 1-7 pass
 
 #### T8.1 — E2E pipeline exits zero and prints recommendation + paper IDs
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npm run e2e:fixture 2>&1`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper && npm --prefix apps/slack-bot run pipeline:fixture 2>&1`
 - Verify: exit code 0, output contains `daily_recommendation_id:` and `paper_recommendation_id:` with non-null values
 - Type: happy path
 
@@ -461,112 +589,113 @@ test -f "$ROOT/research/quant-python/src/investment_research/jobs/evaluate_paper
 **Purpose**: All slash command handlers produce correct output with real DB and mock Bolt context.
 **Depends on**: Group 8 pipeline has run (recommendations exist in DB)
 
+Each test case below runs the corresponding vitest file against the real DB
+(seeded by Group 8). Command pattern:
+`cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && set -a && source ../../.env && set +a && npx vitest run <file> 2>&1`
+Verify pattern: exit code 0, output contains `passed` and no `failed`.
+
 #### T9.1 — /investment status returns connectivity and last recommendation timestamp
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/commands/status.test.ts 2>&1`
-- Verify: exit code 0, output contains DB status OK and ISO timestamp of last recommendation
+- File: `tests/unit/slack/commands/status.test.ts`
 - Type: happy path
 
 #### T9.2 — /investment portfolio shows TW and US allocation buckets
-- Command: integration test for portfolio command
-- Verify: output contains bucket names and allocation percentages for both TW and US
+- File: `tests/unit/slack/commands/portfolio.test.ts`
 - Type: happy path
 
 #### T9.3 — /investment recommendation today renders 3-part structure
-- Command: integration test for recommendation today command
-- Verify: output contains `今日觀察`, `可考慮調整`, `不建議動作`, and paper-only disclaimer
+- File: `tests/unit/slack/commands/recommendationToday.test.ts`
+- Verify (additional): output contains `今日觀察`, `可考慮調整`, `不建議動作`, and paper-only disclaimer
 - Type: happy path
 
 #### T9.4 — /investment brief today renders combined brief or friendly no-brief state
-- Command: integration test for brief today command
-- Verify: output contains brief content OR friendly message (not an error stack)
+- File: `tests/unit/slack/commands/briefToday.test.ts`
 - Type: happy path + edge case (no brief available)
 
 #### T9.5 — /investment brief tw renders Taiwan pre-market brief
-- Verify: output contains TW-specific content
-- Type: happy path
-
 #### T9.6 — /investment brief us renders US pre-market brief
-- Verify: output contains US-specific content
+- File: `tests/unit/slack/commands/briefMarket.test.ts` (covers both TW and US)
 - Type: happy path
 
 #### T9.7 — /investment paper-log lists recent paper recommendations with IDs
-- Verify: output contains at least one row with id, action, symbol, status
+- File: `tests/unit/slack/commands/paperLog.test.ts`
 - Type: happy path
 
 #### T9.8 — /investment explain <valid-id> returns rationale and citations
-- Command: use a seeded paper recommendation ID
-- Verify: output contains rationale text and at least one source citation
-- Type: happy path
-
 #### T9.9 — /investment explain <invalid-id> returns friendly not-found
-- Command: use a non-existent ID
-- Verify: output contains not-found message, no error stack
-- Type: error case
+- File: `tests/unit/slack/commands/explain.test.ts` (covers both valid and invalid IDs)
+- Type: happy path + error case
 
-#### T9.10 — /investment mute VOO records preference; VOO alerts suppressed
-- Command: run mute command, then generate a VOO alert
-- Verify: mute preference written to DB, subsequent VOO alert filtered from output
+#### T9.10 — /investment mute AAPL records preference; AAPL alerts suppressed
+- File: `tests/unit/slack/commands/mute.test.ts` and `tests/unit/orchestration/alertMute.test.ts`
 - Type: happy path + integration
 
 #### T9.11 — /investment feedback <id> useful writes feedback_event row
-- Verify: DB `feedback_events` has row with alert_id and feedback=`useful`
-- Type: happy path
-
 #### T9.12 — /investment feedback <id> with all feedback types writes correct rows
-- Command: test `not_useful`, `too_noisy`, `too_late` in sequence
-- Verify: 3 feedback_event rows with correct feedback values
+- File: `tests/unit/slack/commands/feedback.test.ts` (covers `useful`, `not_useful`, `too_noisy`, `too_late` via `it.each`)
 - Type: happy path
 
 #### T9.13 — Unknown subcommand /investment foo returns friendly error
-- Command: integration test with unknown subcommand
-- Verify: output contains usage help or friendly error, no error stack
+- File: `tests/unit/slack/commands/router.test.ts`
 - Type: error case
 
 ---
 
-### Group 10 — Slack Signature Validation
-**Phase**: Phase 7
-**Purpose**: Inbound Slack event signatures are validated correctly.
+### Group 10 — Slack Signature / Connection Validation
+**Phase**: Phase 7 (HTTP receiver)
+**Purpose**: Inbound Slack requests are validated correctly.
+**Note**: The MVP entrypoint (`src/index.ts`, T4.2.1) runs Bolt in **Socket Mode**
+(`socketMode: true`), authenticated via `SLACK_APP_TOKEN` over a WebSocket — there
+is no inbound HTTP request to sign-check, so HTTP signing-secret validation
+(T10.1-T10.3 as originally written) does not apply to this architecture.
 
-#### T10.1 — Valid signing secret allows request to proceed
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/slack/signatureValidation.test.ts --case valid 2>&1`
-- Verify: exit code 0, request is accepted (HTTP 200 or handler called)
+#### T10.1 — Dry-run startup test with mocked env exits without connecting to real Slack API
+- File: `tests/unit/index.test.ts`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/index.test.ts 2>&1`
+- Verify: exit code 0, output contains `passed`, `@slack/bolt` is mocked (no real Slack connection)
 - Type: happy path
 
-#### T10.2 — Invalid signing secret rejects request
-- Command: same test with tampered signature
-- Verify: request is rejected (HTTP 403 or handler NOT called)
-- Type: error case
-
-#### T10.3 — Replayed request (timestamp > 5 minutes old) is rejected
-- Command: same test with old timestamp
-- Verify: request rejected
-- Type: edge case
+If an HTTP Events API receiver is added in a future task, restore HTTP
+signing-secret/replay tests (valid signature accepted, tampered signature
+rejected, timestamp >5min old rejected) as T10.2/T10.3 at that point.
 
 ---
 
 ### Group 11 — Provider Failure Isolation
 **Phase**: Phase 9
 **Purpose**: Provider failures are logged and isolated; Slack commands continue working.
+**Note**: T11.1–T11.1b cover T6.1.1 (Alpha Vantage adapter + rate limit guard).
+T11.2–T11.4 cover T6.2.1 (provider failure isolation via the `runIsolated` boundary, which
+records `provider_runs.status`). T6.2.1 has landed, so these run against the boundary's unit
+tests with mocked provider errors (deterministic, no live API).
 
-#### T11.1 — Alpha Vantage adapter parses mock payload into normalized records
-- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx tsx tests/integration/providers/alphaVantage.test.ts 2>&1`
-- Verify: exit code 0, normalized records have required fields (symbol, price, timestamp, source)
+#### T11.1 — Alpha Vantage adapter parses mock fixture payload into normalized news records
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/alphaVantage.test.ts 2>&1`
+- Verify: exit code 0; normalized records validate against `NewsFixtureSchema` with required fields (`title`, `source_url`, `market`, `published_at`, `content`); US fixture yields 2 records; non-US markets yield 0
 - Type: happy path
 
-#### T11.2 — Alpha Vantage rate limit reached logs rate_limit in provider_runs
-- Command: simulate rate limit response (429 or quota exceeded message)
-- Verify: `provider_runs` DB row has status=`rate_limit` or `quota_exceeded`; no uncaught exception
+#### T11.1b — Rate limit guard blocks calls beyond the daily UTC cap and resets at midnight
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/rateLimitGuard.test.ts 2>&1`
+- Verify: exit code 0; 26th call within one UTC day throws `RateLimitExceeded` and logs a warning; counter resets when the injected clock crosses UTC midnight; count persists across instances sharing a state path
+- Type: happy path + edge case
+
+#### T11.2 — Rate limit reached records status `rate_limit` in provider_runs
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts -t "rate_limit" 2>&1`
+- Verify: exit code 0; a `RateLimitExceeded` inside `runIsolated` records `provider_run.status = rate_limit` and returns a fallback (no uncaught exception)
 - Type: edge case
 
-#### T11.3 — Alpha Vantage 500 error logs failure without breaking Slack commands
-- Command: simulate provider 500 response, then call `/investment status`
-- Verify: provider_runs has status=`failed`; status command still responds successfully
+#### T11.3 — Provider 500/network error records `failed` without breaking commands
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts 2>&1`
+- Verify: exit code 0; a network/API error records `provider_run.status = failed`, is not propagated, and a subsequent command path still runs (boundary swallows the error)
 - Type: error case
 
-#### T11.4 — Network timeout logs timeout without breaking Slack commands
-- Command: simulate network timeout (zero-byte response after delay)
-- Verify: provider_runs has status=`timeout`; Slack command still responds
+#### T11.4 — Network timeout records status `timeout` without breaking commands
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/unit/providers/providerFailureBoundary.test.ts -t "timeout" 2>&1`
+- Verify: exit code 0; a TimeoutError/AbortError (or timeout-shaped message) records `provider_run.status = timeout` and returns a fallback; the bot keeps responding
+- Type: error case
+
+#### T11.5 — FinMind 401 records `auth_failed`; provider chain exhaustion records `all_failed`
+- Command: `cd /Users/xfreddy2007/Documents/Self-projects/investment-helper/apps/slack-bot && npx vitest run tests/providers/finmind.test.ts tests/providers/taiwanProviderChain.test.ts 2>&1`
+- Verify: exit code 0; HTTP 401 → `auth_failed` (T7.1.1); all Taiwan price providers failing → `all_failed` (T7.2.1)
 - Type: error case
 
 ---
@@ -623,6 +752,9 @@ When a new feature, milestone task, or Slack command is implemented, add test ca
 
 - Find the matching group (by phase and domain), or create a new Group N.
 - If creating a new group: add a phase detection check in the **Phase Detection** section.
+- Groups between 0 and 1 use alpha suffixes (0A, 0B, 0C…) so Group 1-12 numbers stay stable.
+- PHASE1_SCAFFOLD: tests that only need package.json / pyproject.toml.
+- PHASE1_SCHEMA: tests that need db/prisma/schema.prisma to exist.
 
 ### Case format
 

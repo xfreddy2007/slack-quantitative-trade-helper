@@ -1,0 +1,28 @@
+# Fly.io app configuration for the Python quant worker (research/quant-python).
+#
+# Build context: this directory. Run from research/quant-python:
+#   fly deploy --config fly.research.toml
+#
+# This worker runs a single recommendation-generation job (JOB_MODULE) and
+# exits; it does not expose an HTTP port, so no [http_service] block is
+# defined. Scheduling the job (e.g. a daily trigger) is handled externally
+# via GitHub Actions or `fly machine run` and is out of scope for this config.
+#
+# Required secrets (set via `fly secrets set`, see docs/runbooks/fly-deployment.md):
+#   DATABASE_URL, DIRECT_DATABASE_URL, plus the market-data/LLM API keys
+#   listed in .env.example.
+
+app = "investment-helper-research"
+primary_region = "hkg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  APP_TIMEZONE = "Asia/Taipei"
+  JOB_MODULE = "investment_research.jobs.generate_daily_recommendations"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

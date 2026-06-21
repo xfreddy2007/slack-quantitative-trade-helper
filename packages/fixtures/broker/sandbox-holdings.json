@@ -1,0 +1,44 @@
+{
+  "account": "sandbox-paper-001",
+  "broker": "fugle-ibkr-sandbox",
+  "note": "Recorded read-only paper/sandbox account snapshot. Current prices encoded for tests.",
+  "holdings": [
+    {
+      "symbol": "VOO",
+      "market": "US",
+      "asset_type": "ETF",
+      "quantity": 30,
+      "currency": "USD",
+      "avg_cost": 420.50,
+      "current_price": 545.80,
+      "lot_method": "weighted_avg",
+      "target_bucket": "us_core_etf"
+    },
+    {
+      "symbol": "0050.TW",
+      "market": "TW",
+      "asset_type": "ETF",
+      "quantity": 100,
+      "currency": "TWD",
+      "avg_cost": 128.50,
+      "current_price": 142.00,
+      "lot_method": "weighted_avg",
+      "target_bucket": "tw_core_etf"
+    },
+    {
+      "symbol": "CASH.USD",
+      "market": "US",
+      "asset_type": "cash",
+      "quantity": 5000,
+      "currency": "USD",
+      "avg_cost": null,
+      "current_price": 1.00,
+      "lot_method": "weighted_avg",
+      "target_bucket": "cash"
+    }
+  ],
+  "cash_balance": {
+    "amount": 5000,
+    "currency": "USD"
+  }
+}

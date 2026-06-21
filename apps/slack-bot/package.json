@@ -5,15 +5,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:migrate": "npx prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "npx tsx src/db/seed.ts",
+    "pipeline:fixture": "tsx src/orchestration/pipelineFixture.ts",
+    "backtest:fixtures": "tsx src/orchestration/backtestFixtures.ts",
+    "quality-gate": "tsx src/orchestration/qualityGate.ts"
+  },
+  "prisma": {
+    "schema": "../../db/prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -22,12 +29,13 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "prisma": "^5.22.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20"
   }
 }

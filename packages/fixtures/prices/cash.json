@@ -1,0 +1,8 @@
+{
+  "symbol": "USD_CASH",
+  "market": "US",
+  "price": 1.00,
+  "currency": "USD",
+  "timestamp": "2026-05-29T00:00:00.000Z",
+  "provider": "fixture"
+}

@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@schemas/zod": ["./src/types/schemas-zod-stub.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "src/providers",
+    "src/fixtures",
+    "src/orchestration/marketClassifier.ts",
+    "src/orchestration/ingestFixtureSources.ts",
+    "src/orchestration/pipelineFixture.ts",
+    "src/orchestration/backtestFixtures.ts",
+    "src/orchestration/qualityGate.ts"
+  ]
+}

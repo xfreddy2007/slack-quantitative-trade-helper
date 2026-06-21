@@ -1,0 +1,44 @@
+{
+  "name": "Taiwan ETF Portfolio",
+  "description": "Taiwan core ETF focus — no U.S. exposure, suitable for domestic-only strategy",
+  "allocation_targets": [
+    {
+      "bucket": "taiwan_core_etf",
+      "target_pct": 70,
+      "drift_threshold_pct": 5,
+      "markets": ["TW"],
+      "asset_types": ["ETF"]
+    },
+    {
+      "bucket": "cash_or_short_term",
+      "target_pct": 30,
+      "drift_threshold_pct": 5,
+      "markets": ["TW", "US"],
+      "asset_types": ["cash"]
+    }
+  ],
+  "holdings": [
+    {
+      "symbol": "0050.TW",
+      "market": "TW",
+      "asset_type": "ETF",
+      "quantity": 200,
+      "currency": "TWD",
+      "cost_basis": null,
+      "strategy": "taiwan_core",
+      "target_bucket": "taiwan_core_etf",
+      "max_single_alert_sell_pct": 30
+    },
+    {
+      "symbol": "0056.TW",
+      "market": "TW",
+      "asset_type": "ETF",
+      "quantity": 500,
+      "currency": "TWD",
+      "cost_basis": null,
+      "strategy": "taiwan_core",
+      "target_bucket": "taiwan_core_etf",
+      "max_single_alert_sell_pct": 30
+    }
+  ]
+}

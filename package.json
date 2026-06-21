@@ -1,0 +1,10 @@
+{
+  "name": "investment-helper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo root — orchestration scripts for the Slack quantitative trade helper.",
+  "scripts": {
+    "quality-gate": "npm --prefix apps/slack-bot run quality-gate",
+    "backtest:fixtures": "npm --prefix apps/slack-bot run backtest:fixtures"
+  }
+}

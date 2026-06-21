@@ -1,0 +1,46 @@
+[
+  {
+    "id": "fn-2025-04-tw-limitdown",
+    "category": "index_drawdown",
+    "market": "TW",
+    "title": "Taiwan's TAIEX plunges nearly 10% at the open, largest single-day drop on record, as tariff shock hits TSMC",
+    "source_url": "https://example.com/2025/taiex-record-plunge",
+    "published_at": "2025-04-07T01:00:00.000Z",
+    "content": "The Taiwan Stock Exchange opened with a record intraday plunge of nearly 10% on the first trading day after the reciprocal-tariff shock, with TSMC and exporters limit-down on direct US-tariff exposure.",
+    "expected_alert": true,
+    "regression_note": "2025 backtest FN: worst TW crash of the year was structurally suppressed (TW capped at sev 3). T1 must derive severity >= 4."
+  },
+  {
+    "id": "fn-2025-05-twd-surge",
+    "category": "currency_shock",
+    "market": "TW",
+    "title": "Taiwan dollar surges most in decades, up ~5% in two sessions, pressuring exporters' margins",
+    "source_url": "https://example.com/2025/twd-historic-surge",
+    "published_at": "2025-05-05T01:00:00.000Z",
+    "content": "The New Taiwan dollar appreciated sharply against the US dollar in its biggest two-day move in decades, raising concerns over exporter and life-insurer FX losses, though equities held up.",
+    "expected_alert": true,
+    "regression_note": "2025 backtest FN: sharp single-market FX move suppressed. T1 must derive severity >= 4."
+  },
+  {
+    "id": "fn-2025-11-ai-bubble",
+    "category": "index_drawdown",
+    "market": "US",
+    "title": "AI-bubble fears spark sharp pullback in megacap tech and semiconductors",
+    "source_url": "https://example.com/2025/ai-bubble-pullback",
+    "published_at": "2025-11-13T14:00:00.000Z",
+    "content": "Stretched AI valuations and circular-financing concerns drove a sharp pullback in megacap tech and chip names, with elevated volatility through mid-November.",
+    "expected_alert": true,
+    "regression_note": "2025 backtest FN: US single-market drawdown suppressed. T1 must derive severity >= 4."
+  },
+  {
+    "id": "fn-2025-03-growth-scare",
+    "category": "recession_signal",
+    "market": "US",
+    "title": "US equities slide on growth-scare as soft data and tariff uncertainty weigh",
+    "source_url": "https://example.com/2025/march-growth-scare",
+    "published_at": "2025-03-10T14:00:00.000Z",
+    "content": "The S&P 500 entered a correction intra-quarter as consumer sentiment weakened and tariff uncertainty clouded the outlook; some commentary called a possible growth slowdown but signals were not confirmed.",
+    "expected_alert": true,
+    "regression_note": "2025 backtest FN: T1 lifts severity to 4, but unconfirmed/hedged wording keeps reliability-confidence <= 2, so it stays correctly suppressed (documents the low-confidence boundary)."
+  }
+]

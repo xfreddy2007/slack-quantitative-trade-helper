@@ -1,0 +1,44 @@
+{
+  "name": "U.S. ETF Portfolio",
+  "description": "U.S. broad market ETF focus — no Taiwan exposure, suitable for global passive strategy",
+  "allocation_targets": [
+    {
+      "bucket": "us_core_etf",
+      "target_pct": 80,
+      "drift_threshold_pct": 5,
+      "markets": ["US"],
+      "asset_types": ["ETF"]
+    },
+    {
+      "bucket": "cash_or_short_term",
+      "target_pct": 20,
+      "drift_threshold_pct": 5,
+      "markets": ["TW", "US"],
+      "asset_types": ["cash"]
+    }
+  ],
+  "holdings": [
+    {
+      "symbol": "VOO",
+      "market": "US",
+      "asset_type": "ETF",
+      "quantity": 50,
+      "currency": "USD",
+      "cost_basis": null,
+      "strategy": "long_term_core",
+      "target_bucket": "us_core_etf",
+      "max_single_alert_sell_pct": 50
+    },
+    {
+      "symbol": "QQQ",
+      "market": "US",
+      "asset_type": "ETF",
+      "quantity": 20,
+      "currency": "USD",
+      "cost_basis": null,
+      "strategy": "long_term_core",
+      "target_bucket": "us_core_etf",
+      "max_single_alert_sell_pct": 50
+    }
+  ]
+}

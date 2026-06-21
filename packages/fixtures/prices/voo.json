@@ -1,0 +1,10 @@
+{
+  "symbol": "VOO",
+  "market": "US",
+  "price": 537.82,
+  "currency": "USD",
+  "timestamp": "2026-05-29T20:00:00.000Z",
+  "provider": "fixture",
+  "volume": 3421567,
+  "change_pct": -0.42
+}

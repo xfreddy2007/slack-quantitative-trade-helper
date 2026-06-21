@@ -1,0 +1,56 @@
+{
+  "items": "2",
+  "sentiment_score_definition": "x <= -0.35: Bearish; -0.35 < x <= -0.15: Somewhat-Bearish; -0.15 < x < 0.15: Neutral; 0.15 <= x < 0.35: Somewhat-Bullish; x >= 0.35: Bullish",
+  "relevance_score_definition": "0 < x <= 1, with a higher score indicating higher relevance.",
+  "feed": [
+    {
+      "title": "TSMC Reports Record Q1 Earnings Amid AI Chip Demand",
+      "url": "https://example.com/tsmc-q1-2026",
+      "time_published": "20260529T083000",
+      "authors": ["Financial Times"],
+      "summary": "TSMC Q1 2026 earnings exceeded analyst expectations driven by AI chip demand from hyperscalers.",
+      "banner_image": null,
+      "source": "Financial Times",
+      "category_within_source": "Earnings",
+      "source_domain": "ft.com",
+      "topics": [
+        { "topic": "Technology", "relevance_score": "0.857143" },
+        { "topic": "Earnings", "relevance_score": "0.714286" }
+      ],
+      "overall_sentiment_score": 0.312456,
+      "overall_sentiment_label": "Somewhat-Bullish",
+      "ticker_sentiment": [
+        {
+          "ticker": "TSM",
+          "relevance_score": "0.928571",
+          "ticker_sentiment_score": "0.415678",
+          "ticker_sentiment_label": "Bullish"
+        }
+      ]
+    },
+    {
+      "title": "VOO ETF Sees Record Inflows as Investors Shift to Passive Strategies",
+      "url": "https://example.com/voo-inflows-2026",
+      "time_published": "20260529T120000",
+      "authors": ["Bloomberg"],
+      "summary": "Vanguard S&P 500 ETF recorded its highest weekly inflows of the year amid passive investing trend.",
+      "banner_image": null,
+      "source": "Bloomberg",
+      "category_within_source": "ETFs",
+      "source_domain": "bloomberg.com",
+      "topics": [
+        { "topic": "Financial Markets", "relevance_score": "0.857143" }
+      ],
+      "overall_sentiment_score": 0.182345,
+      "overall_sentiment_label": "Somewhat-Bullish",
+      "ticker_sentiment": [
+        {
+          "ticker": "VOO",
+          "relevance_score": "0.964286",
+          "ticker_sentiment_score": "0.234567",
+          "ticker_sentiment_label": "Somewhat-Bullish"
+        }
+      ]
+    }
+  ]
+}
