@@ -5,6 +5,9 @@
   "description": "Monorepo root — orchestration scripts for the Slack quantitative trade helper.",
   "scripts": {
     "quality-gate": "npm --prefix apps/slack-bot run quality-gate",
-    "backtest:fixtures": "npm --prefix apps/slack-bot run backtest:fixtures"
+    "backtest:fixtures": "npm --prefix apps/slack-bot run backtest:fixtures",
+    "validate:fast": "npx tsx scripts/validate.ts fast",
+    "validate:full": "npx tsx scripts/validate.ts full",
+    "validate:deep": "npx tsx scripts/validate.ts deep"
   }
 }

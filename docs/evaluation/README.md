@@ -88,18 +88,22 @@ and `docs/features/feature-trigger-quality-fixes/tasks.md`. These become the reg
 ## 7. How to run
 
 ```bash
-# Fast — every change (seconds)
-#   (static + unit; exact command defined in §02)
+# Fast — every change (seconds, DB-free)
+npm run validate:fast      # typecheck + vitest + pytest
 
-# Full — the complete validation, pre-merge
-#   orchestrator command (to be built per §02/§08) + /e2e skill
+# Full — the complete validation, pre-merge (brings up Postgres)
+npm run validate:full      # Fast + e2e subset + quality-gate + backtest gate + backtest report
+#   then, for full functional coverage:  /e2e-test   (agent-driven runbook)
 
-# Deep — periodic overfitting audit (§06)
+# Deep — periodic audit (pre-release / nightly)
+npm run validate:deep      # Full + 30-day smoke + robustness sweeps (TODO → §06)
 ```
 
-The orchestrator command and exact wiring are designed in [§02](./02-validation-tiers.md) and
-[§08](./08-quality-gates-and-baselines.md). Functional e2e runs through the existing **`/e2e`** skill against
-`.claude/e2e-tests.md`.
+The orchestrator (`scripts/validate.ts`) runs the tier's steps in order, stops at the first hard failure, prints
+a per-step pass/fail table, and writes `scripts/out/validate-report.json` (exit code = first failure's code).
+Full design in [§02](./02-validation-tiers.md); gates/baselines in [§08](./08-quality-gates-and-baselines.md).
+Full functional e2e remains the **`/e2e-test`** skill over `.claude/e2e-tests.md` (authoritative); `validate`
+shells only a small CLI subset of it.
 
 ---
 
