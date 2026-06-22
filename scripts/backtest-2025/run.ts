@@ -171,6 +171,43 @@ const confDist: Record<number, number> = {}
 for (const o of outcomes) confDist[o.confidence] = (confDist[o.confidence] ?? 0) + 1
 const distinctConfLevels = Object.keys(confDist).length
 
+// ---- Information Coefficient (§04): graded predictive power, complements binary precision/recall ----
+// Spearman rank-corr of the model's adverseLikelihood vs the realized adverse magnitude (-ret@evalHorizon).
+// Positive IC = higher predicted adverse-likelihood ranks with worse realized outcomes (good discrimination).
+// REPORT-ONLY for now — observe its stable range before gating (see baselines.json / §04).
+function rank(xs: number[]): number[] {
+  const idx = xs.map((v, i) => [v, i] as [number, number]).sort((a, b) => a[0] - b[0])
+  const r = new Array(xs.length).fill(0)
+  let i = 0
+  while (i < idx.length) {
+    let j = i
+    while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++
+    const avg = (i + j) / 2 + 1 // 1-based average rank for ties
+    for (let k = i; k <= j; k++) r[idx[k][1]] = avg
+    i = j + 1
+  }
+  return r
+}
+function pearson(a: number[], b: number[]): number {
+  const n = a.length
+  if (n < 2) return 0
+  const ma = a.reduce((x, y) => x + y, 0) / n
+  const mb = b.reduce((x, y) => x + y, 0) / n
+  let num = 0
+  let da = 0
+  let db = 0
+  for (let i = 0; i < n; i++) {
+    num += (a[i] - ma) * (b[i] - mb)
+    da += (a[i] - ma) ** 2
+    db += (b[i] - mb) ** 2
+  }
+  return da && db ? num / Math.sqrt(da * db) : 0
+}
+const icPairs = outcomes
+  .map((o) => ({ p: o.adverseLikelihood, r: o.fwd[o.evalHorizon]?.ret }))
+  .filter((x): x is { p: number; r: number } => typeof x.r === 'number')
+const icSpearman = icPairs.length >= 2 ? pearson(rank(icPairs.map((x) => x.p)), rank(icPairs.map((x) => -x.r))) : 0
+
 // ---- per-category hit-rate (of FIRED alerts, did adverse move actually materialize) ----
 const catStats: Record<string, { fired: number; adverse: number }> = {}
 for (const o of fired) {
@@ -260,6 +297,13 @@ const report = {
     Object.entries(calBuckets).map(([k, v]) => [k, { n: v.n, adverseRate: v.adverse / v.n, predicted: v.predicted }])
   ),
   brier,
+  // §04: Information Coefficient — report-only (no gate yet); observe range before gating.
+  ic: {
+    method: 'spearman(adverseLikelihood, -ret@evalHorizon)',
+    spearman: icSpearman,
+    n: icPairs.length,
+    note: 'positive = higher predicted adverse-likelihood ranks with worse realized outcome',
+  },
   // T3: confidence (source reliability) distribution — must be graduated, not just {1,3}.
   confidenceDistribution: confDist,
   distinctConfidenceLevels: distinctConfLevels,
@@ -294,6 +338,7 @@ console.log(`horizons=${HORIZONS.join('/')}d adverse@${ADVERSE_HORIZON}d`)
 console.log(`events=${outcomes.length} fired=${fired.length} TP=${TP} FP=${FP} TN=${TN} FN=${FN}`)
 console.log(`precision=${pct(precision)} recall=${pct(recall)} fp-rate=${pct(fpRate)} Brier(adverseLikelihood)=${brier.toFixed(3)}`)
 console.log(`confidence (reliability) distribution: ${Object.entries(confDist).sort().map(([c, n]) => `${c}:${n}`).join(' ')} (${distinctConfLevels} distinct levels)`)
+console.log(`IC (spearman adverseLikelihood vs -ret@evalHorizon): ${icSpearman.toFixed(3)} (n=${icPairs.length}, report-only)`)
 console.log(`adverse-likelihood calibration (predicted -> realized):`)
 for (const [k, v] of Object.entries(report.calibration).sort()) console.log(`  p=${pct((v as any).predicted)}: n=${(v as any).n} realized=${pct((v as any).adverseRate)}`)
 console.log(`adverse-rate by eval-horizon class:`)

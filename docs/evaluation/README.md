@@ -71,7 +71,9 @@ holdout), **buy/sell asymmetry** (precision-favored for "act", recall-favored fo
 ## 6. Current baseline snapshot
 
 Captured from `scripts/backtest-2025/out/report.json` (label *2025 full-year*, period 2025-01-27 .. 2025-12-22)
-and `docs/features/feature-trigger-quality-fixes/tasks.md`. These become the regression baselines in §08.
+and `docs/features/feature-trigger-quality-fixes/tasks.md`. These are now the regression baselines in the
+versioned registry **`docs/evaluation/baselines.json`**, enforced by `scripts/assertBaseline.ts` (see
+[§04](./04-signal-quality-evaluation.md) / [§08](./08-quality-gates-and-baselines.md)).
 
 | Metric | Baseline | Source |
 |--------|----------|--------|
@@ -82,6 +84,7 @@ and `docs/features/feature-trigger-quality-fixes/tasks.md`. These become the reg
 | Recall | **0.889** (FN 1) | report.json |
 | FP-rate | **0.20** | report.json |
 | Brier (on `adverseLikelihood`) | **0.127** | report.json |
+| IC (Spearman, adverseLikelihood vs −ret) | **0.141** (n=20) — report-only | report.json `ic` |
 | Confidence distribution | {2:2, 3:6, 4:9, 5:3} — 4 distinct levels | report.json |
 | Adverse rate — acute @5d / allocation @21d | 0.125 / 0.083 | report.json |
 
@@ -92,7 +95,7 @@ and `docs/features/feature-trigger-quality-fixes/tasks.md`. These become the reg
 npm run validate:fast      # typecheck + vitest + pytest
 
 # Full — the complete validation, pre-merge (brings up Postgres)
-npm run validate:full      # Fast + e2e subset + quality-gate + backtest gate + backtest report
+npm run validate:full      # Fast + e2e subset + quality-gate + backtest report + signal-quality regression gate
 #   then, for full functional coverage:  /e2e-test   (agent-driven runbook)
 
 # Deep — periodic audit (pre-release / nightly)

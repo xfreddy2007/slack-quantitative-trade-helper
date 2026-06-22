@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "updated": "2026-06-22",
+  "policy": "ratchet",
+  "_comment": "Single source of truth for gated signal-quality metrics. Gate = no-worse-than (baseline +/- epsilon), per metric direction. Epsilon absorbs small-sample noise (~one event flip on the 20-event set). Lowering a baseline is an explicit reviewed edit with a rationale (see docs/evaluation/08). Improvements may ratchet a baseline up. Enforced by scripts/assertBaseline.ts; metrics with gated=false are recorded in the registry but not yet enforced.",
+  "sets": {
+    "2025-full-year": {
+      "report": "scripts/backtest-2025/out/report.json",
+      "events": 20,
+      "metrics": {
+        "precision":   { "path": "totals.precision",        "baseline": 0.80,  "direction": "higher", "epsilon": 0.10, "gated": true },
+        "recall":      { "path": "totals.recall",           "baseline": 0.889, "direction": "higher", "epsilon": 0.12, "gated": true },
+        "fpRate":      { "path": "totals.fpRate",           "baseline": 0.20,  "direction": "lower",  "epsilon": 0.15, "gated": true },
+        "brier":       { "path": "brier",                   "baseline": 0.127, "direction": "lower",  "epsilon": 0.05, "gated": true },
+        "distinctConfidenceLevels": { "path": "distinctConfidenceLevels", "baseline": 4, "direction": "higher", "epsilon": 1, "gated": true }
+      }
+    },
+    "30d-smoke": {
+      "report": "scripts/backtest-30d/out/report.json",
+      "events": 13,
+      "_comment": "Short smoke window; weaker numbers by design. Ratchet guards against large regression vs its own baseline, not against the full-year set.",
+      "metrics": {
+        "precision":   { "path": "totals.precision",        "baseline": 0.556, "direction": "higher", "epsilon": 0.10, "gated": true },
+        "recall":      { "path": "totals.recall",           "baseline": 0.625, "direction": "higher", "epsilon": 0.12, "gated": true },
+        "fpRate":      { "path": "totals.fpRate",           "baseline": 0.444, "direction": "lower",  "epsilon": 0.15, "gated": true },
+        "brier":       { "path": "brier",                   "baseline": 0.200, "direction": "lower",  "epsilon": 0.05, "gated": true },
+        "distinctConfidenceLevels": { "path": "distinctConfidenceLevels", "baseline": 3, "direction": "higher", "epsilon": 1, "gated": true }
+      }
+    }
+  },
+  "coverage": {
+    "_comment": "Coverage baselines from docs/mvp-review.md. Registry entries only -- not yet wired to a gate (coverage extraction TODO). Documented in docs/evaluation/08.",
+    "tsUnitLineCoverage": { "baseline": 0.79, "direction": "higher", "epsilon": 0.01, "gated": false },
+    "pythonLibraryCoverage": { "baseline": 0.98, "direction": "higher", "epsilon": 0.03, "gated": false }
+  }
+}
