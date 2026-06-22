@@ -1,43 +1,91 @@
 # §06 — Robustness & Overfitting (Deep tier)
 
-> **Stub for discussion. Phase 2 — net-new methodology.** This is the **Deep** lane: does the strategy hold
-> up out-of-sample, or is it tuned to the fixtures? Parent: [README](./README.md).
+> **Decided spec** (was a discussion stub). The **Deep** lane: does the rule hold up, or is it tuned to the
+> fixtures? Built as a **report-only audit** (`scripts/robustness/run.ts`) — never gates. Parent:
+> [README](./README.md).
 
-## Why
+## The honest framing
 
-With a small curated event set (20 events in 2025), it is easy to tune `scoreItem`/`checkThreshold` until the
-backtest looks great — and have it mean nothing on unseen data. ~95% of backtested strategies fail live; the
-defenses below are standard quant practice.
+The app has **no fitted parameters** — `scoreItem` / `checkThreshold` are fixed rules, not a model trained on
+the fixtures. So classic ML "train on X, validate on holdout Y" doesn't directly apply: there's nothing fitted
+to overfit. The real overfitting risk is the **threshold cutoffs** (severity ≥ 4, confidence ≥ 3, relevance ≥ 3)
+— the knobs a human could have hand-tuned until the 20-event backtest looked good. So the audit probes those
+directly rather than faking statistical rigor on a set too small for it.
 
-## Methods to build
+## What the confusion matrix depends on
 
-- **Walk-forward / out-of-sample split.** Partition events/prices into in-sample (tune) and out-of-sample
-  (validate only). Reserve 20–30%, never tune on it. Roll the window forward as the corpus grows.
-- **Probability of Backtest Overfitting (PBO)** via Combinatorially Symmetric Cross-Validation (CSCV) —
-  estimate the chance the "best" threshold config is overfit.
-- **Deflated Sharpe Ratio** — correct the action-value Sharpe ([§04](./04-signal-quality-evaluation.md)) for
-  multiple-testing selection bias and non-normal returns.
-- **Threshold-sensitivity & parameter-stability sweeps** — perturb severity/confidence/relevance cutoffs and
-  budget caps; a robust rule degrades *gracefully*, not off a cliff.
+precision / recall / FP-rate depend **only** on `(fired, expected_alert)`. `fired` = `scoreItem` →
+`checkThreshold(cutoffs)` → `checkBudget`. **No price paths are needed** for these metrics, so the harness reuses
+the live functions and mirrors only the ~15-line budget-aware decision loop. A **self-check** asserts the
+baseline config reproduces the canonical `report.json` confusion matrix (TP8/FP2/TN9/FN1) — if the mirror ever
+drifts from production, the audit says so loudly.
 
-## Dependencies
+`checkThreshold` was given **optional cutoff params** (default = production values) so the sweep perturbs one
+shared rule instead of forking it. Passing no cutoffs reproduces production exactly (all 328 TS tests green).
 
-- Needs a **larger / out-of-sample corpus** → ties to the live-history backfill track in
-  [§07](./07-data-and-provider-validation.md). Curated 2025 fixtures alone are too small for a real holdout.
-- Builds on §04's metric engine (extend, don't fork).
+## Analyses built
+
+### 1. Threshold-sensitivity sweep — the core overfitting probe
+
+Perturb each cutoff ±1 (severity {3,4,5}, confidence {2,3,4}, relevance {2,3,4}), hold the others at default,
+recompute the confusion matrix. A robust rule degrades **gracefully**; a **cliff** means the result hinges on
+the exact cutoff (a fixture-tuning smell).
+
+**Primary vs secondary knobs.** Severity is the *decisive filter by design* — a big swing when you move it is
+expected, not evidence of overfit. Hidden fixture-tuning would surface in the **secondary** knobs (confidence /
+relevance), so the advisory `stability` label is graded on **those**; severity's swing is reported but not
+graded.
+
+Current findings (2025 20-event set):
+
+| Knob | precision range | recall range | read |
+|------|-----------------|--------------|------|
+| severity (primary) | 44% → 80% → **100%** | 89% → 89% → 33% | decisive filter; baseline (4) sits between a FP-flood (3) and a recall-collapse (5) |
+| confidence | 71% → 80% → 82% | **56% → 89% → 100%** | recall is fragile to this cutoff |
+| relevance | 78% → 80% | 78% → 89% | near-flat — robust |
+
+→ `stability: SENSITIVE` (max secondary swing = **recall 44%** via the confidence cutoff > 25% tolerance). A
+specific, honest finding: **recall hinges on the confidence threshold**. The full 3×3×3 grid envelope
+(minPrecision 42%, maxFP 58%) bounds the worst corners.
+
+### 2. Walk-forward temporal split (report-only, N-warned)
+
+70/30 chronological split → confusion matrix on the early in-sample slice vs the late out-of-sample slice. With
+no fitted params this is a **temporal-stability** check, **not** train/validate. Current: in-sample (n=14)
+precision 78% / recall 88%; out-of-sample (n=6) precision 100% / recall 100% — but emitted with an explicit
+**insufficient-N warning** (6 < 10): indicative only, not statistically meaningful.
+
+### 3. PBO (CSCV) + deflated Sharpe — deferred
+
+Probability of Backtest Overfitting via combinatorially symmetric cross-validation, and a multiple-testing /
+non-normality correction to the action-value Sharpe ([§04](./04-signal-quality-evaluation.md)). **Deferred** —
+recorded in the report as `status: "deferred"`. N=20 is too small for CSCV or selection-bias correction to mean
+anything; these land when the **live-history corpus** ([§07](./07-data-and-provider-validation.md)) provides a
+real out-of-sample set.
 
 ## Role in the suite
 
-**Deep** tier only — pre-release / nightly, not per-change. Output is an overfitting audit report, not a
-per-commit gate (initially).
+**Deep tier only**, **report-only** (matches the stub's stated intent: "an overfitting audit report, not a
+per-commit gate"). Wired into the orchestrator ([§02](./02-validation-tiers.md)) as the `robustness` step:
 
-## Open questions for discussion
+```bash
+npx tsx scripts/robustness/run.ts          # 2025 set; writes scripts/robustness/out/report.json
+BT_DATA_DIR=scripts/backtest-30d npx tsx scripts/robustness/run.ts
+```
 
-- Minimum corpus size before walk-forward/PBO is meaningful? (20 events is too few)
-- Build now as documentation-only, or defer code until §07's history track lands?
-- Does any Deep metric eventually become a release-blocking gate, or stays advisory?
+Always exits 0; a self-check failure is surfaced in the report/console, not as a gate. (Promoting any finding to
+a release-blocking gate is deferred until the §07 corpus makes the signal trustworthy.)
+
+## Resolved decisions
+
+- **Report-only audit**, Deep tier — never gates (revisit once §07 corpus lands).
+- **Build sensitivity sweep + walk-forward smoke now**; **defer PBO / deflated Sharpe** to §07 (no faked rigor).
+- **Parameterize `checkThreshold`** (optional cutoffs, defaults preserved) — one shared rule, no forked copy.
+- **Stability graded on secondary knobs only** — severity is the intended decisive filter, not an overfit signal.
 
 ## Links
 
-- `scripts/backtest-2025/run.ts` (metric engine to extend) · [§07](./07-data-and-provider-validation.md)
-  (corpus) · [arXiv walk-forward](https://arxiv.org/html/2512.12924v1)
+- `scripts/robustness/run.ts` · `apps/slack-bot/src/orchestration/alertThreshold.ts` (parameterized) ·
+  `scripts/backtest-2025/run.ts` (canonical report for the self-check)
+- [§04](./04-signal-quality-evaluation.md) (metric engine) · [§07](./07-data-and-provider-validation.md)
+  (corpus for PBO/DSR) · [§02](./02-validation-tiers.md) (orchestrator) · [arXiv walk-forward](https://arxiv.org/html/2512.12924v1)

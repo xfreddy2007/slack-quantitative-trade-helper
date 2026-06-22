@@ -216,10 +216,12 @@ const STEPS: Step[] = [
   },
   {
     id: 'robustness',
-    name: 'Robustness sweeps (walk-forward / PBO / deflated Sharpe)',
+    name: 'Robustness audit — sensitivity sweep + walk-forward (report-only)',
     tiers: ['deep'],
     kind: 'report',
-    todo: true, // built in docs/evaluation/06-robustness-and-overfitting.md
+    cmd: 'npx',
+    args: ['tsx', 'scripts/robustness/run.ts'],
+    cwd: PROJECT_ROOT,
   },
 ]
 

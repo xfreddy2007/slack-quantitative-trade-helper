@@ -41,7 +41,7 @@ holdout), **buy/sell asymmetry** (precision-favored for "act", recall-favored fo
 | Pipeline / render gate | `qualityGate.ts` (to expand) | Full | `apps/slack-bot/src/orchestration/qualityGate.ts` |
 | Signal-quality backtest | `scripts/backtest-2025/run.ts` | Full | + regression thresholds (new) |
 | Paper-rec outcome eval | Python `evaluation/` + Group 12 | Full | `research/quant-python/.../evaluation/` |
-| Robustness / overfitting | new harness (walk-forward, PBO, IC) | Deep | — (Phase 2) |
+| Robustness / overfitting | `scripts/robustness/run.ts` (sensitivity sweep, walk-forward; PBO/DSR deferred) | Deep | report-only audit |
 | Provider / data | Group 11 + contract tests | Full | `runIsolated`, provider adapters |
 
 ## 4. Three tiers
@@ -99,7 +99,7 @@ npm run validate:full      # Fast + e2e subset + quality-gate + backtest report 
 #   then, for full functional coverage:  /e2e-test   (agent-driven runbook)
 
 # Deep — periodic audit (pre-release / nightly)
-npm run validate:deep      # Full + 30-day smoke + robustness sweeps (TODO → §06)
+npm run validate:deep      # Full + 30-day smoke + robustness audit (sensitivity sweep + walk-forward)
 ```
 
 The orchestrator (`scripts/validate.ts`) runs the tier's steps in order, stops at the first hard failure, prints
