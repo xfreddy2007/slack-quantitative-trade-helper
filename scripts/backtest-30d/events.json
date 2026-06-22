@@ -1,0 +1,145 @@
+[
+  {
+    "id": "0326-auto-tariffs",
+    "date": "2025-03-26",
+    "category": "trade_policy",
+    "market": "US",
+    "title": "US announces 25% tariffs on all imported autos and auto parts",
+    "content": "A 25% tariff on imported vehicles and parts pressured automakers and broad risk appetite ahead of the April reciprocal-tariff deadline.",
+    "source_url": "https://example.com/30d/auto-tariffs",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0328-pce-hot",
+    "date": "2025-03-28",
+    "category": "inflation_shock",
+    "market": "US",
+    "title": "US core PCE comes in hotter than expected; consumer sentiment slumps, S&P 500 falls ~2%",
+    "content": "Core PCE inflation surprised to the upside and consumer sentiment dropped, sending equities down about 2% as stagflation worries grew.",
+    "source_url": "https://example.com/30d/pce-hot",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0402-liberation-day",
+    "date": "2025-04-02",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "Liberation Day: US unveils sweeping reciprocal tariffs on nearly all trading partners",
+    "content": "The US announced broad reciprocal tariffs after the close, far harsher than expected, a level-3 alert for global trade and systemic equity risk.",
+    "source_url": "https://example.com/30d/liberation-day",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0403-crash-day1",
+    "date": "2025-04-03",
+    "category": "index_drawdown",
+    "market": "US",
+    "title": "S&P 500 plunges 4.8%, worst single day since 2020 as tariff shock hits",
+    "content": "US equities suffered their worst day since the 2020 pandemic crash as investors priced in the reciprocal-tariff regime.",
+    "source_url": "https://example.com/30d/crash-day1",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0404-china-retaliate",
+    "date": "2025-04-04",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "China retaliates with 34% tariffs on all US goods; S&P 500 drops another ~6%",
+    "content": "Beijing matched with across-the-board 34% tariffs, escalating to a full trade war. Global equities fell sharply for a second day.",
+    "source_url": "https://example.com/30d/china-retaliate",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0407-taiex-record-plunge",
+    "date": "2025-04-07",
+    "category": "index_drawdown",
+    "market": "TW",
+    "title": "Taiwan's TAIEX plunges nearly 10% at the open — largest single-day drop on record; TSMC limit-down",
+    "content": "Reopening after a holiday, the Taiwan Stock Exchange opened with a record intraday plunge of almost 10%, with TSMC and exporters limit-down on direct US-tariff exposure.",
+    "source_url": "https://example.com/30d/taiex-record-plunge",
+    "expected_alert": true,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "0409-pause-rally",
+    "date": "2025-04-09",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "US announces 90-day pause on most reciprocal tariffs; S&P 500 surges ~9.5% in historic rally",
+    "content": "A 90-day pause (China excepted) sparked one of the largest single-day equity rallies on record as recession tail-risk was repriced lower.",
+    "source_url": "https://example.com/30d/pause-rally",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0410-china-125",
+    "date": "2025-04-10",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "China raises tariffs on US goods to 125%; markets give back part of the rebound",
+    "content": "Beijing escalated tariffs to 125% even as the US paused others, and equities surrendered a chunk of the prior day's historic gains.",
+    "source_url": "https://example.com/30d/china-125",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0411-electronics-exempt",
+    "date": "2025-04-11",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "US exempts smartphones, computers and semiconductors from reciprocal tariffs",
+    "content": "An exemption for key electronics and chips relieved the technology supply chain, a clear positive for semiconductors and AI hardware names.",
+    "source_url": "https://example.com/30d/electronics-exempt",
+    "expected_alert": false,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "0416-nvda-h20",
+    "date": "2025-04-16",
+    "category": "regulatory",
+    "market": "US",
+    "title": "Nvidia warns of $5.5bn charge as US restricts H20 AI-chip exports to China; chips sell off",
+    "content": "New US export curbs on Nvidia's China-bound H20 accelerators triggered a multi-billion-dollar charge and dragged the broader semiconductor complex lower.",
+    "source_url": "https://example.com/30d/nvda-h20",
+    "expected_alert": true,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "0417-tsmc-earnings",
+    "date": "2025-04-17",
+    "category": "earnings_shock",
+    "market": "TW",
+    "title": "TSMC posts record Q1 profit on AI demand and keeps full-year guidance despite tariff noise",
+    "content": "TSMC reported a record first-quarter profit driven by AI accelerator demand and maintained its growth outlook, reassuring investors. A positive surprise.",
+    "source_url": "https://example.com/30d/tsmc-q1",
+    "expected_alert": false,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "0421-powell-attack",
+    "date": "2025-04-21",
+    "category": "central_bank",
+    "market": "US",
+    "title": "Equities fall ~2.4% as the President escalates attacks on the Fed Chair, raising independence fears",
+    "content": "Public pressure on the Fed Chair to cut rates and threats to his position rattled markets, with the S&P 500 down about 2.4% on central-bank-independence concerns.",
+    "source_url": "https://example.com/30d/powell-attack",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "0423-softening-rally",
+    "date": "2025-04-23",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "Markets rally as the administration softens tone on China tariffs and backs off Fed-firing threat",
+    "content": "Conciliatory signals on both China tariffs and Fed independence drove a sharp relief rally, with risk assets recovering much of the week's losses.",
+    "source_url": "https://example.com/30d/softening-rally",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  }
+]
