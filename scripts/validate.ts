@@ -215,6 +215,16 @@ const STEPS: Step[] = [
     cwd: PROJECT_ROOT,
   },
   {
+    id: 'holdout-report',
+    name: 'Out-of-sample holdout backtest — real TW prices (§07; report-only)',
+    tiers: ['deep'],
+    kind: 'report',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/backtest-2025/run.ts'],
+    cwd: PROJECT_ROOT,
+    env: { BT_DATA_DIR: resolve(PROJECT_ROOT, 'scripts/backtest-holdout'), BT_LABEL: '2025 holdout (real TW)' },
+  },
+  {
     id: 'robustness',
     name: 'Robustness audit — sensitivity sweep + walk-forward (report-only)',
     tiers: ['deep'],

@@ -1,0 +1,222 @@
+[
+  {
+    "id": "2025-01-deepseek",
+    "date": "2025-01-27",
+    "category": "tech_disruption",
+    "market": "GLOBAL",
+    "title": "DeepSeek R1 model triggers global AI-chip selloff; Nvidia falls ~17% in a single session",
+    "content": "A low-cost Chinese AI model rattled assumptions about AI capex, sparking a sharp global selloff in semiconductor and AI names. Nvidia lost roughly 17% in one day, dragging TSMC and the broader AI supply chain lower.",
+    "source_url": "https://example.com/2025/deepseek-r1-selloff",
+    "expected_alert": true,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "2025-02-tariff-threats",
+    "date": "2025-02-10",
+    "category": "trade_policy",
+    "market": "US",
+    "title": "US administration signals sweeping new tariffs on steel, aluminum and major trading partners",
+    "content": "Escalating tariff rhetoric raised the risk of a broad trade conflict, pressuring equity risk appetite though no concrete reciprocal-tariff schedule was yet published.",
+    "source_url": "https://example.com/2025/feb-tariff-threats",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-03-growth-scare",
+    "date": "2025-03-10",
+    "category": "recession_signal",
+    "market": "US",
+    "title": "US equities slide on growth-scare as soft data and tariff uncertainty weigh",
+    "content": "The S&P 500 entered a correction intra-quarter as consumer sentiment weakened and tariff uncertainty clouded the outlook; some commentary called a possible growth slowdown but signals were not confirmed.",
+    "source_url": "https://example.com/2025/march-growth-scare",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-04-liberation-day",
+    "date": "2025-04-02",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "Liberation Day: US announces sweeping reciprocal tariffs, triggering worst global equity rout since 2020",
+    "content": "The US unveiled broad reciprocal tariffs on nearly all trading partners. Global equities crashed over the following sessions, with the S&P 500 down double digits and Taiwan's market hit hard on export and semiconductor exposure. A level-3 alert for systemic risk.",
+    "source_url": "https://example.com/2025/liberation-day-tariffs",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-04-tw-limitdown",
+    "date": "2025-04-07",
+    "category": "index_drawdown",
+    "market": "TW",
+    "title": "Taiwan's TAIEX plunges nearly 10% at the open, largest single-day drop on record, as tariff shock hits TSMC",
+    "content": "The Taiwan Stock Exchange opened with a record intraday plunge of nearly 10% on the first trading day after the reciprocal-tariff shock, with TSMC and exporters limit-down on direct US-tariff exposure.",
+    "source_url": "https://example.com/2025/taiex-record-plunge",
+    "expected_alert": true,
+    "relevant_symbol": "0050.TW"
+  },
+  {
+    "id": "2025-04-pause",
+    "date": "2025-04-09",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "US announces 90-day pause on most reciprocal tariffs; global equities stage historic one-day rebound",
+    "content": "A 90-day pause on most country-specific tariffs (China excepted) sparked one of the largest single-day rallies in years, with the S&P 500 up roughly 9-10% and Taiwan rebounding sharply.",
+    "source_url": "https://example.com/2025/tariff-pause-rally",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-05-geneva-truce",
+    "date": "2025-05-12",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "US and China agree in Geneva to sharply cut tariffs for 90 days; risk assets rally",
+    "content": "Negotiators agreed to roll back the bulk of the April tariff escalation for 90 days. Equities extended their recovery and volatility fell.",
+    "source_url": "https://example.com/2025/geneva-trade-truce",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-05-twd-surge",
+    "date": "2025-05-05",
+    "category": "currency_shock",
+    "market": "TW",
+    "title": "Taiwan dollar surges most in decades, up ~5% in two sessions, pressuring exporters' margins",
+    "content": "The New Taiwan dollar appreciated sharply against the US dollar in its biggest two-day move in decades, raising concerns over exporter and life-insurer FX losses, though equities held up.",
+    "source_url": "https://example.com/2025/twd-historic-surge",
+    "expected_alert": true,
+    "relevant_symbol": "0050.TW"
+  },
+  {
+    "id": "2025-06-israel-iran",
+    "date": "2025-06-13",
+    "category": "geopolitical",
+    "market": "GLOBAL",
+    "title": "Israel launches large-scale strikes on Iran; oil spikes and risk assets wobble as 12-day war begins",
+    "content": "Israeli strikes on Iranian targets opened a 12-day conflict. Brent crude spiked and equities saw a risk-off move on escalation and supply fears.",
+    "source_url": "https://example.com/2025/israel-iran-war",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-06-us-strike-iran",
+    "date": "2025-06-22",
+    "category": "geopolitical",
+    "market": "GLOBAL",
+    "title": "US strikes Iranian nuclear sites; markets brace for retaliation but oil reverses lower within days",
+    "content": "US forces struck Iranian nuclear facilities. Despite initial fears, a ceasefire followed and oil gave back its war premium, with equities resuming their climb.",
+    "source_url": "https://example.com/2025/us-strikes-iran",
+    "expected_alert": true,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-07-tsmc-earnings",
+    "date": "2025-07-17",
+    "category": "earnings_shock",
+    "market": "TW",
+    "title": "TSMC posts record quarterly profit on AI demand, raises full-year revenue guidance",
+    "content": "TSMC reported a record quarter driven by AI accelerator demand and lifted its 2025 revenue growth outlook, reinforcing the AI capex narrative. A positive earnings surprise.",
+    "source_url": "https://example.com/2025/tsmc-q2-record",
+    "expected_alert": false,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "2025-07-trade-deals",
+    "date": "2025-07-23",
+    "category": "trade_policy",
+    "market": "GLOBAL",
+    "title": "US strikes trade frameworks with Japan and the EU ahead of tariff deadline; markets hit new highs",
+    "content": "A series of bilateral trade frameworks reduced tail-risk from the tariff standoff, helping global equities push to fresh record highs.",
+    "source_url": "https://example.com/2025/us-japan-eu-deals",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-08-jackson-hole",
+    "date": "2025-08-22",
+    "category": "central_bank",
+    "market": "US",
+    "title": "Fed Chair signals openness to rate cuts at Jackson Hole as labor market cools",
+    "content": "At Jackson Hole the Fed Chair opened the door to easing, citing downside labor-market risks, fueling a rally in rate-sensitive assets.",
+    "source_url": "https://example.com/2025/jackson-hole-pivot",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-09-fed-cut",
+    "date": "2025-09-17",
+    "category": "central_bank",
+    "market": "US",
+    "title": "Federal Reserve cuts rates by 25bp, its first cut of 2025, and signals further easing",
+    "content": "The FOMC lowered the policy rate by 25 basis points amid a softening labor market and projected additional cuts, broadly as expected.",
+    "source_url": "https://example.com/2025/fed-first-cut",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-10-shutdown",
+    "date": "2025-10-01",
+    "category": "regulatory",
+    "market": "US",
+    "title": "US federal government enters shutdown after funding lapse; data releases delayed",
+    "content": "A funding impasse triggered a federal government shutdown, delaying key economic data. Market reaction was initially muted but added uncertainty.",
+    "source_url": "https://example.com/2025/us-gov-shutdown",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-10-fed-cut2",
+    "date": "2025-10-29",
+    "category": "central_bank",
+    "market": "US",
+    "title": "Fed delivers second consecutive 25bp cut; Chair pushes back on a December cut being a foregone conclusion",
+    "content": "The Fed cut again but signaled a December move was not guaranteed, cooling some rate-cut optimism and lifting volatility modestly.",
+    "source_url": "https://example.com/2025/fed-october-cut",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-11-ai-bubble",
+    "date": "2025-11-13",
+    "category": "index_drawdown",
+    "market": "US",
+    "title": "AI-bubble fears spark sharp pullback in megacap tech and semiconductors",
+    "content": "Stretched AI valuations and circular-financing concerns drove a sharp pullback in megacap tech and chip names, with elevated volatility through mid-November.",
+    "source_url": "https://example.com/2025/ai-bubble-pullback",
+    "expected_alert": true,
+    "relevant_symbol": "2330.TW"
+  },
+  {
+    "id": "2025-11-rumor",
+    "date": "2025-11-20",
+    "category": "recession_signal",
+    "market": "US",
+    "title": "Unverified report suggests possible softening in regional manufacturing surveys",
+    "content": "An unconfirmed note pointed to a possible weakening in some regional PMIs; the signal was unclear and not corroborated by official data.",
+    "source_url": "https://example.com/2025/unverified-pmi-rumor",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-12-fed-cut3",
+    "date": "2025-12-10",
+    "category": "central_bank",
+    "market": "US",
+    "title": "Fed cuts rates a third time in 2025 as inflation eases; equities close the year near record highs",
+    "content": "A December rate cut amid easing inflation supported a year-end rally, with US and Taiwan equities finishing 2025 near record highs.",
+    "source_url": "https://example.com/2025/fed-december-cut",
+    "expected_alert": false,
+    "relevant_symbol": "VOO"
+  },
+  {
+    "id": "2025-12-taiex-record",
+    "date": "2025-12-22",
+    "category": "index_drawdown",
+    "market": "TW",
+    "title": "Taiwan's TAIEX closes 2025 at a record high, up strongly on the year led by AI supply chain",
+    "content": "Taiwan equities ended 2025 at record levels, with TSMC and the AI supply chain driving strong full-year gains despite the April tariff shock.",
+    "source_url": "https://example.com/2025/taiex-year-record",
+    "expected_alert": false,
+    "relevant_symbol": "0050.TW"
+  }
+]

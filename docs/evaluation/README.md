@@ -42,7 +42,7 @@ holdout), **buy/sell asymmetry** (precision-favored for "act", recall-favored fo
 | Signal-quality backtest | `scripts/backtest-2025/run.ts` | Full | + regression thresholds (new) |
 | Paper-rec outcome eval | Python `evaluation/` + Group 12 | Full | `research/quant-python/.../evaluation/` |
 | Robustness / overfitting | `scripts/robustness/run.ts` (sensitivity sweep, walk-forward; PBO/DSR deferred) | Deep | report-only audit |
-| Provider / data | Group 11 + contract tests | Full | `runIsolated`, provider adapters |
+| Provider / data | Group 11 + contract tests; real-data OOS holdout (`scripts/backfill/`) | Full / Deep | `runIsolated`, provider adapters, `backtest-holdout/` |
 
 ## 4. Three tiers
 

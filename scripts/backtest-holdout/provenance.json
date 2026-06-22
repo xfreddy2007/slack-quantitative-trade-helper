@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-06-22T04:33:31.473Z",
+  "purpose": "out-of-sample HOLDOUT — real EOD closes for the curated 2025 events; two-corpora model (§07)",
+  "window": {
+    "start": "2025-01-01",
+    "end": "2026-03-31"
+  },
+  "eventsFrom": "scripts/backtest-2025/events.json (copied — same ground-truth labels)",
+  "sources": {
+    "VOO": {
+      "provider": "reconstructed-carryover",
+      "real": false,
+      "note": "AV free tier blocks deep history (outputsize=full is premium); carried from scripts/backtest-2025/prices.json. TODO §07: switch US to Twelve Data / Finnhub free history.",
+      "rows": 32,
+      "first": "2025-01-15",
+      "last": "2026-02-28"
+    },
+    "0050.TW": {
+      "provider": "finmind",
+      "dataset": "TaiwanStockPrice",
+      "dataId": "0050",
+      "real": true,
+      "rows": 293,
+      "first": "2025-01-02",
+      "last": "2026-03-31"
+    },
+    "2330.TW": {
+      "provider": "finmind",
+      "dataset": "TaiwanStockPrice",
+      "dataId": "2330",
+      "real": true,
+      "rows": 298,
+      "first": "2025-01-02",
+      "last": "2026-03-31"
+    },
+    "cash": {
+      "provider": "synthetic",
+      "real": false,
+      "note": "constant 1.0 over union of trading dates",
+      "rows": 301,
+      "first": "2025-01-02",
+      "last": "2026-03-31"
+    }
+  }
+}
